@@ -2,13 +2,10 @@ from haversine import haversine
 import numpy as np
 import pandas as pd
 from fastdtw import fastdtw
-import statsmodels.api as sm
-from scipy.spatial.distance import pdist, squareform
 import pickle
 import os
 from joblib import Parallel, delayed
-import projection as pjt
-from src import features_methods as fm
+from itertools import product
 
 
 def dict_reorder(x):
@@ -73,6 +70,68 @@ def normalize(x, dim_set, verbose=True, znorm=True, centralize=False, norm_geo=T
 
     return x
 
+
+def MD(a, b):
+    """
+    Merge Distance for GPS
+    :param a: trajectory A
+    :param b: trajectory B
+    :return: merge
+
+    References:
+    [1] Ismail, Anas, and Antoine Vigneron. "A new trajectory similarity measure for GPS data." Proceedings of the 6th ACM SIGSPATIAL International Workshop on GeoStreaming. 2015.
+    [2] Li, Huanhuan, et al. "Spatio-temporal vessel trajectory clustering based on data mapping and density." IEEE Access 6 (2018): 58939-58954.
+    """
+    m = len(a)
+    n = len(b)
+    A = np.zeros([m, n])
+    B = np.zeros([m, n])
+
+    a_dist = [haversine(a[i-1], a[i]) for i in range(1, m)]
+    b_dist = [haversine(b[i-1], b[i]) for i in range(1, n)]
+    # ab_dist = cdist(a, b, metric=haversine)
+
+    # initializing bounderies
+    i = 0
+    a_d = 0
+    for j in range(n):
+        k = j - 1
+        if k > 0 and k < n:
+            a_d = a_d + b_dist[k-1]
+        A[i, j] = a_d + haversine(b[j], a[0])
+
+    j = 0
+    b_d = 0
+    for i in range(m):
+        k = i - 1
+        if k > 0 and k < n:
+            b_d = b_d + a_dist[k - 1]
+        B[i, j] = b_d + haversine(a[i], b[0])
+
+    j = 0
+    for i in range(1, m):
+        # A[i, j] = min(A[i - 1, j] + a_dist[i - 1], B[i - 1, j] + ab_dist[i, j])
+        A[i, j] = min(A[i - 1, j] + a_dist[i - 1], B[i - 1, j] + haversine(a[i], b[j]))
+    i = 0
+    for j in range(1, n):
+        # B[i, j] = min(A[i, j - 1] + ab_dist[i, j], B[i, j - 1] + b_dist[j - 1])
+        B[i, j] = min(A[i, j - 1] + haversine(b[j], a[i]), B[i, j - 1] + b_dist[j - 1])
+
+    # computing distances
+    for i, j in product(range(1, m), range(1, n)):
+        # A[i, j] = min(A[i-1, j] + a_dist[i-1], B[i-1, j] + ab_dist[i, j])
+        A[i, j] = min(A[i-1, j] + a_dist[i-1], B[i-1, j] + haversine(a[i], b[j]))
+        # B[i, j] = min(A[i, j-1] + ab_dist[i, j], B[i, j-1] + b_dist[j-1])
+        B[i, j] = min(A[i, j-1] + haversine(b[j], a[i]), B[i, j-1] + b_dist[j-1])
+
+    # getting the merge distance
+    md_dist = min(A[-1, -1], B[-1, -1])
+    if md_dist != 0:
+        # md_dist = (2*md_dist) / (A[-1,-1] + B[-1,-1])
+        md_dist = ((2*md_dist) / (np.sum(a_dist)+np.sum(b_dist)))-1
+    return md_dist
+
+
 class DistanceMatrix:
     def __init__(self, dataset, verbose=True, **args):
         self.verbose = verbose
@@ -126,7 +185,6 @@ class DistanceMatrix:
                 os.makedirs(self.path)
 
             pickle.dump(self.dm, open(f'{self.path}/features_distance.p', 'wb'))
-            pjt.plot_cluster_traj(self.dm, pd.Series(np.zeros(self.dm.shape[0])), folder=self.path)
             df_features = pd.DataFrame(self.dm)
             df_features.to_csv(f'{self.path}/features_distance.csv')
             self.dm_path = f'{self.path}/features_distance.p'
@@ -166,7 +224,7 @@ class DistanceMatrix:
 
         dist_matrix = dict_reorder(dist_matrix)
         dm = np.array([list(item.values()) for item in dist_matrix.values()])
-        self.dm = fm.divide_max_value(dm)
+        self.dm = dm/dm.max()
 
     def dmd(self):
         dist_matrix = {}
@@ -202,7 +260,7 @@ class DistanceMatrix:
 
         dist_matrix = dict_reorder(dist_matrix)
         dm = np.array([list(item.values()) for item in dist_matrix.values()])
-        self.dm = abs(fm.divide_max_value(dm))
+        self.dm = dm/dm.max()
 
     ### functions to parallelize ###
     def _mdtw_func(self, id_b, id_a, s_a, dist_matrix):
@@ -217,7 +275,7 @@ class DistanceMatrix:
             print(f"\tComputing {id_a} with {id_b} of {len(self._ids)}")
         s_b = [self.dataset_norm[self._ids[id_b]][dim] for dim in self._dim_set]
         # compute distance
-        dist_matrix[self._ids[id_a]][self._ids[id_b]] = fm.MD(np.array(s_a).T, np.array(s_b).T)
+        dist_matrix[self._ids[id_a]][self._ids[id_b]] = MD(np.array(s_a).T, np.array(s_b).T)
         dist_matrix[self._ids[id_b]][self._ids[id_a]] = dist_matrix[self._ids[id_a]][self._ids[id_b]]
 
 

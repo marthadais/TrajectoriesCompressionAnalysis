@@ -1,12 +1,13 @@
 from preprocessing.clean_trajectories import Trajectories
 from src.extract_distances import DistanceMatrix
+from src.compression import compression
 from datetime import datetime
 import os
 
 print('Starting')
 ### Reading and cleaning dataset
 # Number of vessels
-n_samples = 30
+n_samples = None
 # Fishing type
 vessel_type = [30, 1001, 1002]
 # Time period
@@ -31,6 +32,10 @@ if region_limits is not None:
 
 dim_set = ['lat', 'lon']
 
+dataset_dict = dataset.pandas_to_dict()
+compress_dataset = compression(dataset=dataset_dict)
+
+ahsuahsuhasuhas
 features_path = f'{folder}/features_distance.p'
 if not os.path.exists(features_path):
     dataset_dict = dataset.pandas_to_dict()
