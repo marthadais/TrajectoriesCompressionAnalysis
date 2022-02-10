@@ -3,6 +3,7 @@ import sys
 sys.setrecursionlimit(5000)
 # adapt from https://github.com/uestc-db/traj-compression/blob/master/batch/TD-TR/TD-TR.cpp
 
+
 def calc_SED(pA, pI, pB):
     """
     It computes the Synchronous Euclidean Distance (SED) error
@@ -32,7 +33,31 @@ def calc_SED(pA, pI, pB):
     return error
 
 
-def TR_dists(trajectory, traj_time):
+def calc_PD(pA, pI, pB):
+    """
+    It computes the Perpendicular Distance (PD)
+    :param pA: initial point
+    :param pI: middle point
+    :param pB: final point
+    :return: shortest distance
+    """
+    pA_lat, pA_lon, pA_time = pA
+    pI_lat, pI_lon, pI_time = pI
+    pB_lat, pB_lon, pB_time = pB
+
+    A = pB_lon - pA_lon
+    B = pA_lat - pB_lat
+    C = pB_lat * pA_lat - pA_lat * pB_lon
+
+    if A == 0 and B == 0:
+        shortDist = 0
+    else:
+        shortDist = abs((A * pI_lat + B * pI_lon + C) / np.sqrt(A * A + B * B))
+
+    return shortDist
+
+
+def TR_dists(trajectory, traj_time, calc_func):
     """
     It computes the SED error for all points in between
     :param trajectory: a single dict trajectory having the keys as each attribute
@@ -46,11 +71,12 @@ def TR_dists(trajectory, traj_time):
     # start and final points
     start_location = (trajectory['lat'][0], trajectory['lon'][0], traj_time[0])
     final_location = (trajectory['lat'][-1], trajectory['lon'][-1], traj_time[-1])
-    for i in range(traj_len):
+    for i in range(1, (traj_len-1)):
         # middle point at index i
         middle = (trajectory['lat'][i], trajectory['lon'][i], traj_time[i])
         #compute the distance
-        d = calc_SED(start_location, middle, final_location)
+        # d = calc_SED(start_location, middle, final_location)
+        d = calc_func(start_location, middle, final_location)
         # get distances information
         ds = np.append(ds, d)
         if d > dmax:
@@ -60,7 +86,7 @@ def TR_dists(trajectory, traj_time):
     return dmax, idx, ds.mean()
 
 
-def TR(trajectory, dim_set, traj_time, epsilon):
+def TR(trajectory, dim_set, traj_time, calc_func, epsilon):
     """
     It compress the trajectory using the Time Ration technique.
     It is a recursive method, dividing the trajectory and compression both parts
@@ -73,12 +99,10 @@ def TR(trajectory, dim_set, traj_time, epsilon):
     new_trajectory = {}
     for dim in dim_set:
         new_trajectory[dim] = np.array([])
-    dmax = 0
-    idx = 0
     traj_len = len(trajectory['lat'])
 
     # time in seconds
-    dmax, idx, _ = TR_dists(trajectory, traj_time)
+    dmax, idx, _ = TR_dists(trajectory, traj_time, calc_func)
     trajectory['time'] = trajectory['time'].astype(str)
 
     # print(f'\tepsilon: {epsilon}, dmax: {dmax}, index: {idx}, trajlen: {traj_len}')
@@ -86,17 +110,17 @@ def TR(trajectory, dim_set, traj_time, epsilon):
         traj1 = {}
         traj2 = {}
         for dim in dim_set:
-            traj1[dim] = trajectory[dim][0:idx]
-            traj2[dim] = trajectory[dim][idx:]
+            traj1[dim] = trajectory[dim][0:(idx+1)]
+            traj2[dim] = trajectory[dim][(idx+1):]
 
         # compression of the parts
         recResults1 = traj1
         if len(traj1['lat']) > 2:
-            recResults1 = TR(traj1, dim_set, traj_time[0:idx], epsilon)
+            recResults1 = TR(traj1, dim_set, traj_time[0:idx], calc_func, epsilon)
 
         recResults2 = traj2
         if len(traj2['lat']) > 2:
-            recResults2 = TR(traj2, dim_set, traj_time[idx:], epsilon)
+            recResults2 = TR(traj2, dim_set, traj_time[idx:], calc_func, epsilon)
 
         for dim in dim_set:
             new_trajectory[dim] = np.append(new_trajectory[dim], recResults1[dim])
@@ -112,7 +136,14 @@ def TR(trajectory, dim_set, traj_time, epsilon):
     return new_trajectory
 
 
-def compression(dataset, dim_set=None, verbose=True):
+def compression(dataset, dim_set=None, metric=None, verbose=True):
+    metrics = {'TR': calc_SED,
+               'PD': calc_PD}
+
+    if metric == None:
+        metric = 'TR'
+    calc_func = metrics[metric]
+
     mmsis = list(dataset.keys())
     new_dataset = {}
 
@@ -131,10 +162,10 @@ def compression(dataset, dim_set=None, verbose=True):
         traj_time = traj_time / traj_time.max()
 
         # get average epsilon
-        max_epsilon, idx, epsilon = TR_dists(curr_traj, traj_time)
+        max_epsilon, idx, epsilon = TR_dists(curr_traj, traj_time, calc_func)
 
         # compress trajectory
-        compress_traj = TR(curr_traj, dim_set, traj_time, epsilon)
+        compress_traj = TR(curr_traj, dim_set, traj_time, calc_func, epsilon)
         compress_traj['time'] = compress_traj['time'].astype('datetime64[s]')
         new_dataset[mmsis[id_mmsi]] = compress_traj
         if verbose:

@@ -269,7 +269,7 @@ class Trajectories:
         :return: dataset in a dict format.
         """
         # reading cleaned data
-        if compress or self.compress is not None:
+        if compress:
             if not os.path.exists(self.compress_path):
                 self._compress_trips()
                 print(f'Preprocessed trips data save at: {self.compress_path}')
@@ -297,6 +297,6 @@ class Trajectories:
 
     def _compress_trips(self):
         dataset_dict = self.get_dataset()
-        compress_dataset = compression(dataset=dataset_dict)
+        compress_dataset = compression(dataset=dataset_dict, metric=self.compress)
         dataset = dict_to_pandas(compress_dataset)
         dataset.to_csv(self.compress_path, index=False)

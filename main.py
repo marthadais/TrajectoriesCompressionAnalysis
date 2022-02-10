@@ -19,7 +19,8 @@ dim_set = ['lat', 'lon']
 region_limits = [30, 38, -92, -70]
 
 # Creating dataset
-dataset = Trajectories(n_samples=n_samples, vessel_type=vessel_type, time_period=(start_day, end_day), region=region_limits)
+dataset = Trajectories(n_samples=n_samples, vessel_type=vessel_type, time_period=(start_day, end_day),
+                       region=region_limits, compress='PD')
 
 #### Computing Distances
 metric = 'dtw'
@@ -38,6 +39,6 @@ if not os.path.exists(features_path):
     features = DistanceMatrix(dataset=dataset_dict, features_opt=metric, dim_set=dim_set, folder=folder)
 
 compress_dataset = dataset.get_dataset(compress=True)
-features_compression_path = f'{folder}/features_distance_TR.p'
+features_compression_path = f'{folder}/features_distance_PD.p'
 if not os.path.exists(features_compression_path):
     features_compression = DistanceMatrix(dataset=compress_dataset, features_opt=metric, dim_set=dim_set, folder=folder)
