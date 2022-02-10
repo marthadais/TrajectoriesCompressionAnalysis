@@ -44,6 +44,8 @@ def removing_invalid_samples(x, min_obs=None, subset=None):
     # remove duplicate entries
     x = x.drop_duplicates(subset=subset, keep='first')
 
+    x = missing_values_treatment(x)
+
     if min_obs is not None:
         # remove mmsi with less than min observations
         obs_per_mmsi = x.groupby(x['mmsi'], as_index=False).size()
@@ -183,8 +185,6 @@ class Trajectories:
 
         # removing invalid data
         dataset = removing_invalid_samples(dataset, min_obs=self.min_obs, subset=['mmsi', 'time'])
-        # missing values are replaced to -1 and removed
-        dataset = missing_values_treatment(dataset)
         # including country information
         dataset = include_country(dataset)
         dataset.to_csv(self.cleaned_path, index=False)
@@ -202,17 +202,12 @@ class Trajectories:
 
         # select mmsi randomly
         ids = dataset['mmsi'].unique()
-        if self._nsamples is not None:
-            random.shuffle(ids)
-            ids = ids[0:self._nsamples]
-            dataset = dataset[dataset['mmsi'].isin(ids)]
-
         new_dataset = pd.DataFrame()
         # create trajectories
         count_mmsi = 0
         count_traj = 0
         for id in ids:
-            print(f'\t Cleaning trajectory {count_mmsi} of {len(ids)}')
+            print(f'\t Preprocessing each trajectory {count_mmsi} of {len(ids)}')
             trajectory = dataset[dataset['mmsi'] == id]
 
             # selecting the region
@@ -223,27 +218,24 @@ class Trajectories:
                     isin_region = False
 
             # if is inside the selected region and contains enough observations
-            if (trajectory.shape[0] >= self.min_obs) and isin_region:
-                # include sub trajectory id and total time
+            if isin_region:
+                # include trajectory id
                 aux_col = pd.DataFrame({'trajectory': np.repeat(count_traj, trajectory.shape[0])})
                 trajectory.reset_index(drop=True, inplace=True)
                 trajectory = pd.concat([aux_col, trajectory], axis=1)
-
-                # time period between observations = delta time
-                duration_step = trajectory['time'].diff().iloc[1:(trajectory.shape[0])]
-                duration_step = duration_step.apply(lambda x: x.total_seconds())
-                # add the delta time
-                trajectory = trajectory.assign(duration=pd.Series(duration_step, index=trajectory.index))
-                trajectory['duration'] = trajectory['duration'].fillna(0)
-                total_time = trajectory['duration'].cumsum().iloc[-1] / 3600
-                trajectory = trajectory.assign(total_time=pd.Series(np.repeat(total_time, trajectory.shape[0]), index=trajectory.index))
-
                 # add trajectory
                 new_dataset = pd.concat([new_dataset, trajectory], axis=0, ignore_index=True)
                 count_traj = count_traj + 1
             count_mmsi = count_mmsi + 1
 
-        self._nsamples = count_mmsi
+        if self._nsamples is not None:
+            ids = new_dataset['mmsi'].unique()
+            random.shuffle(ids)
+            ids = ids[0:self._nsamples]
+            new_dataset = new_dataset[new_dataset['mmsi'].isin(ids)]
+        else:
+            self._nsamples = count_traj
+
         new_dataset.to_csv(self.preprocessed_path, index=False)
 
     def pandas_to_dict(self):

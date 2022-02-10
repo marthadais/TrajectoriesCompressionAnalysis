@@ -208,7 +208,7 @@ class DistanceMatrix:
         # for id_a in range(len(self._ids)):
         while id_a < len(self._ids):
             if self.verbose:
-                print(f"Computing {id_a} of {len(self._ids)}")
+                print(f"DTW: {id_a} of {len(self._ids)}")
             dist_matrix[self._ids[id_a]][self._ids[id_a]] = 0
             # trajectory a
             s_a = [self.dataset_norm[self._ids[id_a]][dim] for dim in self._dim_set]
@@ -244,7 +244,7 @@ class DistanceMatrix:
         # for id_a in range(len(self._ids)):
         while id_a < len(self._ids):
             if self.verbose:
-                print(f"Computing {id_a} of {len(self._ids)}")
+                print(f"MD: {id_a} of {len(self._ids)}")
             dist_matrix[self._ids[id_a]][self._ids[id_a]] = 0
             # trajectory a
             s_a = [self.dataset_norm[self._ids[id_a]][dim] for dim in self._dim_set]

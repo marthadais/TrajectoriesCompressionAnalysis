@@ -7,7 +7,7 @@ import os
 print('Starting')
 ### Reading and cleaning dataset
 # Number of vessels
-n_samples = None
+n_samples = 30
 # Fishing type
 vessel_type = [30, 1001, 1002]
 # Time period
@@ -35,8 +35,8 @@ dim_set = ['lat', 'lon']
 dataset_dict = dataset.pandas_to_dict()
 compress_dataset = compression(dataset=dataset_dict)
 
-ahsuahsuhasuhas
 features_path = f'{folder}/features_distance.p'
-if not os.path.exists(features_path):
-    dataset_dict = dataset.pandas_to_dict()
-    features = DistanceMatrix(dataset=dataset_dict, features_opt=metric, dim_set=dim_set, folder=folder)
+features = DistanceMatrix(dataset=dataset_dict, features_opt=metric, dim_set=dim_set, folder=folder)
+
+features_path = f'{folder}/features_distance_TR.p'
+features = DistanceMatrix(dataset=compress_dataset, features_opt=metric, dim_set=dim_set, folder=folder)
