@@ -102,7 +102,9 @@ def TR(trajectory, dim_set, traj_time, epsilon):
     else:
         trajectory['time'] = trajectory['time'].astype(str)
         for dim in dim_set:
-            new_trajectory[dim] = np.append(new_trajectory[dim], trajectory[dim])
+            new_trajectory[dim] = np.append(new_trajectory[dim], trajectory[dim][0])
+            if traj_len > 1:
+                new_trajectory[dim] = np.append(new_trajectory[dim], trajectory[dim][-1])
 
     return new_trajectory
 
