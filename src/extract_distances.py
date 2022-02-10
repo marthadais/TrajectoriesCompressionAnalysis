@@ -223,8 +223,7 @@ class DistanceMatrix:
         os.remove(f'save_state/dtw_id_a_matrix.p')
 
         dist_matrix = dict_reorder(dist_matrix)
-        dm = np.array([list(item.values()) for item in dist_matrix.values()])
-        self.dm = dm/dm.max()
+        self.dm = np.array([list(item.values()) for item in dist_matrix.values()])
 
     def dmd(self):
         dist_matrix = {}
@@ -259,8 +258,7 @@ class DistanceMatrix:
         os.remove(f'save_state/md_id_a_matrix.p')
 
         dist_matrix = dict_reorder(dist_matrix)
-        dm = np.array([list(item.values()) for item in dist_matrix.values()])
-        self.dm = dm/dm.max()
+        self.dm = np.array([list(item.values()) for item in dist_matrix.values()])
 
     ### functions to parallelize ###
     def _mdtw_func(self, id_b, id_a, s_a, dist_matrix):
