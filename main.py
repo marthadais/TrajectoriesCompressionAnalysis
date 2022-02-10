@@ -9,7 +9,7 @@ print('Starting')
 # Number of vessels
 n_samples = 30
 # Fishing type
-vessel_type = [30, 1001, 1002]
+vessel_type = [30, 1001, 1002, 70]
 # Time period
 start_day = datetime(2020, 4, 1)
 end_day = datetime(2020, 4, 30)
@@ -17,10 +17,12 @@ end_day = datetime(2020, 4, 30)
 dim_set = ['lat', 'lon']
 # polygon region
 region_limits = [30, 38, -92, -70]
+#compression technique
+compress_opt='PD'
 
 # Creating dataset
 dataset = Trajectories(n_samples=n_samples, vessel_type=vessel_type, time_period=(start_day, end_day),
-                       region=region_limits, compress='PD')
+                       region=region_limits)
 
 #### Computing Distances
 metric = 'dtw'
@@ -38,7 +40,12 @@ features_path = f'{folder}/features_distance.p'
 if not os.path.exists(features_path):
     features = DistanceMatrix(dataset=dataset_dict, features_opt=metric, dim_set=dim_set, folder=folder)
 
-compress_dataset = dataset.get_dataset(compress=True)
-features_compression_path = f'{folder}/features_distance_PD.p'
+compress_dataset = dataset.get_dataset(compress='TR')
+features_compression_path = f'{folder}/features_distance_TR.p'
+if not os.path.exists(features_compression_path):
+    features_compression = DistanceMatrix(dataset=compress_dataset, features_opt=metric, dim_set=dim_set, folder=folder)
+
+compress_dataset = dataset.get_dataset(compress='DP')
+features_compression_path = f'{folder}/features_distance_TR.p'
 if not os.path.exists(features_compression_path):
     features_compression = DistanceMatrix(dataset=compress_dataset, features_opt=metric, dim_set=dim_set, folder=folder)

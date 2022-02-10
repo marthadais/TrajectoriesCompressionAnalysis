@@ -263,14 +263,15 @@ class Trajectories:
 
         new_dataset.to_csv(self.preprocessed_path, index=False)
 
-    def get_dataset(self, compress=False):
+    def get_dataset(self, compress=None):
         """
         It converts the csv dataset into dict format.
         :return: dataset in a dict format.
         """
         # reading cleaned data
-        if compress:
+        if compress is not None:
             if not os.path.exists(self.compress_path):
+                self.compress = compress
                 self._compress_trips()
                 print(f'Preprocessed trips data save at: {self.compress_path}')
             dataset = pd.read_csv(self.compress_path, parse_dates=['time'])
