@@ -1,4 +1,6 @@
 import numpy as np
+import sys
+sys.setrecursionlimit(5000)
 # adapt from https://github.com/uestc-db/traj-compression/blob/master/batch/TD-TR/TD-TR.cpp
 
 def calc_SED(pA, pI, pB):
@@ -14,19 +16,20 @@ def calc_SED(pA, pI, pB):
     pB_lat, pB_lon, pB_time = pB
 
 
-    Di = pI_time - pA_time
-    Db = pB_time - pA_time
-    if Di == 0:
+    middle_dist = pI_time - pA_time
+    total_dist = pB_time - pA_time
+    if total_dist == 0:
         time_ratio = 0
     else:
-        time_ratio = Db/Di
+        time_ratio = middle_dist/total_dist
 
     lat = pA_lat + (pB_lat - pA_lat) * time_ratio
     lon = pA_lon + (pB_lon - pA_lon) * time_ratio
 
     lat_diff = lat - pI_lat
     lon_diff = lon - pI_lon
-    return np.sqrt((lat_diff * lat_diff) + (lon_diff * lon_diff))
+    error = np.sqrt((lat_diff * lat_diff) + (lon_diff * lon_diff))
+    return error
 
 
 def TR_dists(trajectory, traj_time):
