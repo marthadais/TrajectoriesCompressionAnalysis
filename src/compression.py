@@ -38,7 +38,7 @@ def TR_dists(trajectory, traj_time):
     """
     dmax = 0
     idx = 0
-    davg = 0
+    ds = np.array([])
     traj_len = len(trajectory['lat'])
     # start and final points
     start_location = (trajectory['lat'][0], trajectory['lon'][0], traj_time[0])
@@ -49,12 +49,12 @@ def TR_dists(trajectory, traj_time):
         #compute the distance
         d = calc_SED(start_location, middle, final_location)
         # get distances information
-        davg = davg + d
+        ds = np.append(ds, d)
         if d > dmax:
             dmax = d
             idx = i
 
-    return dmax, idx, davg/traj_len
+    return dmax, idx, ds.mean()
 
 
 def TR(trajectory, dim_set, traj_time, epsilon):
@@ -78,7 +78,7 @@ def TR(trajectory, dim_set, traj_time, epsilon):
     dmax, idx, _ = TR_dists(trajectory, traj_time)
     trajectory['time'] = trajectory['time'].astype(str)
 
-    # print(f'\tdmax: {dmax}, index: {idx}, trajlen: {traj_len}')
+    # print(f'\tepsilon: {epsilon}, dmax: {dmax}, index: {idx}, trajlen: {traj_len}')
     if dmax > epsilon:
         traj1 = {}
         traj2 = {}
@@ -92,7 +92,7 @@ def TR(trajectory, dim_set, traj_time, epsilon):
             recResults1 = TR(traj1, dim_set, traj_time[0:idx], epsilon)
 
         recResults2 = traj2
-        if len(traj1['lat']) > 2:
+        if len(traj2['lat']) > 2:
             recResults2 = TR(traj2, dim_set, traj_time[idx:], epsilon)
 
         for dim in dim_set:
@@ -132,5 +132,7 @@ def compression(dataset, dim_set=None, verbose=True):
         compress_traj = TR(curr_traj, dim_set, traj_time, epsilon)
         compress_traj['time'] = compress_traj['time'].astype('datetime64[s]')
         new_dataset[mmsis[id_mmsi]] = compress_traj
+        if verbose:
+            print(f"\tlength before: {len(curr_traj['lat'])}, length now: {len(compress_traj['lat'])}")
 
     return new_dataset

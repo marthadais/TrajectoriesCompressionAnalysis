@@ -6,6 +6,7 @@ from io import BytesIO
 from zipfile import ZipFile
 from urllib.request import urlopen
 from datetime import timedelta
+from src.compression import compression
 import warnings
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -120,6 +121,19 @@ def create_dataset_noaa(path, time_period, vt=None):
 
     dataset.to_csv(path, index=False)
 
+
+def dict_to_pandas(dataset):
+    """
+    It converts the dict dataset into pandas format.
+    :return: dataset in a pandas format.
+    """
+    new_dataset = pd.DataFrame()
+    ids = dataset.keys()
+    for i in ids:
+        curr_traj = pd.DataFrame.from_dict(dataset[i])
+        new_dataset = pd.concat([new_dataset,curr_traj], axis=0)
+    return new_dataset
+
 ### Class to produce the preprocessed dataset ###
 class Trajectories:
     """
@@ -149,6 +163,10 @@ class Trajectories:
         if 'region' in args.keys():
             self.region = args['region']
 
+        self.compress = None
+        if 'compress' in args.keys():
+            self.compress = args['compress']
+
         if time_period is None:
             time_period = (datetime(2020, 4, 19), datetime(2020, 4, 25))
 
@@ -159,22 +177,29 @@ class Trajectories:
         self.dataset_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{day_name}_time_period.csv"
         self.cleaned_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{day_name}_clean.csv"
         self.preprocessed_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_{day_name}_trips.csv"
+        self.compress_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{self.compress}_{day_name}_trips.csv"
         if self.region is not None:
             self.preprocessed_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_{day_name}_trips.csv"
+            self.compress_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_compress_{self.compress}_{day_name}_trips.csv"
 
         if not os.path.exists(self.dataset_path):
             create_dataset_noaa(self.dataset_path, vt=self._vt, time_period=time_period)
             print(f'Preprocessed data save at: {self.dataset_path}')
 
         if not os.path.exists(self.cleaned_path):
-            self.cleaning()
+            self._cleaning()
             print(f'Clean data save at: {self.cleaned_path}')
 
         if not os.path.exists(self.preprocessed_path):
-            self.mmsi_trips()
+            self._mmsi_trips()
             print(f'Preprocessed trips data save at: {self.preprocessed_path}')
 
-    def cleaning(self):
+        if self.compress is not None:
+            if not os.path.exists(self.compress_path):
+                self._compress_trips()
+                print(f'Preprocessed trips data save at: {self.compress_path}')
+
+    def _cleaning(self):
         """
         It cleans the dataset, removing invalid samples and including country information.
         """
@@ -189,7 +214,7 @@ class Trajectories:
         dataset = include_country(dataset)
         dataset.to_csv(self.cleaned_path, index=False)
 
-    def mmsi_trips(self):
+    def _mmsi_trips(self):
         """
         It reads the DCAIS dataset, select MMSI randomly if a number of samples is defined.
         It process the trajectories of each MMSI (pandas format).
@@ -238,13 +263,19 @@ class Trajectories:
 
         new_dataset.to_csv(self.preprocessed_path, index=False)
 
-    def pandas_to_dict(self):
+    def get_dataset(self, compress=False):
         """
         It converts the csv dataset into dict format.
         :return: dataset in a dict format.
         """
         # reading cleaned data
-        dataset = pd.read_csv(self.preprocessed_path, parse_dates=['time'])
+        if compress or self.compress is not None:
+            if not os.path.exists(self.compress_path):
+                self._compress_trips()
+                print(f'Preprocessed trips data save at: {self.compress_path}')
+            dataset = pd.read_csv(self.compress_path, parse_dates=['time'])
+        else:
+            dataset = pd.read_csv(self.preprocessed_path, parse_dates=['time'])
         dataset['time'] = dataset['time'].astype('datetime64[ns]')
         dataset = dataset.sort_values(by=['trajectory', "time"])
 
@@ -264,3 +295,8 @@ class Trajectories:
 
         return new_dataset
 
+    def _compress_trips(self):
+        dataset_dict = self.get_dataset()
+        compress_dataset = compression(dataset=dataset_dict)
+        dataset = dict_to_pandas(compress_dataset)
+        dataset.to_csv(self.compress_path, index=False)

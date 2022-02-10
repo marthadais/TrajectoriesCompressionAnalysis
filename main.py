@@ -32,11 +32,10 @@ if region_limits is not None:
 
 dim_set = ['lat', 'lon']
 
-dataset_dict = dataset.pandas_to_dict()
-compress_dataset = compression(dataset=dataset_dict)
+# dataset_dict = dataset.get_dataset()
+# features_path = f'{folder}/features_distance.p'
+# features = DistanceMatrix(dataset=dataset_dict, features_opt=metric, dim_set=dim_set, folder=folder)
 
-features_path = f'{folder}/features_distance.p'
-features = DistanceMatrix(dataset=dataset_dict, features_opt=metric, dim_set=dim_set, folder=folder)
-
-features_path = f'{folder}/features_distance_TR.p'
-features = DistanceMatrix(dataset=compress_dataset, features_opt=metric, dim_set=dim_set, folder=folder)
+compress_dataset = dataset.get_dataset(compress=True)
+features_compression_path = f'{folder}/features_distance_TR.p'
+features_compression = DistanceMatrix(dataset=compress_dataset, features_opt=metric, dim_set=dim_set, folder=folder)
