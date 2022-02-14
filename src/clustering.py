@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn import metrics
+import src.statistics as st
 from scipy.cluster.hierarchy import dendrogram
 
 
@@ -215,8 +216,8 @@ class Clustering:
                 print('Saving in csv file')
             self._agg_cluster_labels()
 
-        # print('Computing statistics...')
-        # st.file_statistics(self.results_file_path, self.path)
+        print('Computing statistics...')
+        st.file_statistics(self.results_file_path, self.path)
 
     def silhouette(self):
         """
