@@ -131,7 +131,7 @@ def dict_to_pandas(dataset):
     ids = dataset.keys()
     for i in ids:
         curr_traj = pd.DataFrame.from_dict(dataset[i])
-        new_dataset = pd.concat([new_dataset,curr_traj], axis=0)
+        new_dataset = pd.concat([new_dataset, curr_traj], axis=0)
     return new_dataset
 
 ### Class to produce the preprocessed dataset ###
@@ -173,14 +173,13 @@ class Trajectories:
         if not os.path.exists('./data/preprocessed/'):
             os.makedirs('./data/preprocessed/')
 
-        day_name = f'{time_period[0].day:02d}-{time_period[0].month:02d}_to_{time_period[1].day:02d}-{time_period[1].month:02d}'
-        self.dataset_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{day_name}_time_period.csv"
-        self.cleaned_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{day_name}_clean.csv"
-        self.preprocessed_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_{day_name}_trips.csv"
-        self.compress_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{self.compress}_{day_name}_trips.csv"
+        self._day_name = f'{time_period[0].day:02d}-{time_period[0].month:02d}_to_{time_period[1].day:02d}-{time_period[1].month:02d}'
+        self.dataset_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._day_name}_time_period.csv"
+        self.cleaned_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._day_name}_clean.csv"
+        self.preprocessed_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_{self._day_name}_trips.csv"
+        self.compress_path = None
         if self.region is not None:
-            self.preprocessed_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_{day_name}_trips.csv"
-            self.compress_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_compress_{self.compress}_{day_name}_trips.csv"
+            self.preprocessed_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_{self._day_name}_trips.csv"
 
         if not os.path.exists(self.dataset_path):
             create_dataset_noaa(self.dataset_path, vt=self._vt, time_period=time_period)
@@ -193,11 +192,6 @@ class Trajectories:
         if not os.path.exists(self.preprocessed_path):
             self._mmsi_trips()
             print(f'Preprocessed trips data save at: {self.preprocessed_path}')
-
-        if self.compress is not None:
-            if not os.path.exists(self.compress_path):
-                self._compress_trips()
-                print(f'Preprocessed trips data save at: {self.compress_path}')
 
     def _cleaning(self):
         """
@@ -238,8 +232,7 @@ class Trajectories:
             # selecting the region
             isin_region = True
             if self.region is not None:
-                if (trajectory['lat'].between(self.region[0], self.region[1]).sum() == 0) | (
-                        trajectory['lon'].between(self.region[2], self.region[3]).sum() == 0):
+                if ((trajectory['lon'] >= self.region[2]) & (trajectory['lon'] <= self.region[3]) & (trajectory['lat'] >= self.region[0]) & (trajectory['lat'] <= self.region[1])).sum() == 0:
                     isin_region = False
 
             # if is inside the selected region and contains enough observations
@@ -270,8 +263,11 @@ class Trajectories:
         """
         # reading cleaned data
         if compress is not None:
+            self.compress = compress
+            self.compress_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{self.compress}_{self._day_name}_trips.csv"
+            if self.region is not None:
+                self.compress_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_compress_{self.compress}_{self._day_name}_trips.csv"
             if not os.path.exists(self.compress_path):
-                self.compress = compress
                 self._compress_trips()
                 print(f'Preprocessed trips data save at: {self.compress_path}')
             dataset = pd.read_csv(self.compress_path, parse_dates=['time'])
