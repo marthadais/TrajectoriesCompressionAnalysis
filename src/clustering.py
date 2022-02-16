@@ -168,7 +168,7 @@ class Clustering:
         if 'min_samples' in args.keys():
             self._min_samples = args['min_samples']
 
-        self._linkage = 'complete'
+        self._linkage = 'average'
         if 'linkage' in args.keys():
             self._linkage = args['linkage']
 

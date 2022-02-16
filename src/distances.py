@@ -78,78 +78,44 @@ def MD(a, b):
     return md_dist
 
 
-class DistanceMatrix:
-    def __init__(self, dataset, verbose=True, **args):
-        self.verbose = verbose
-        self.dataset = dataset
-        self.dm = None
-        # self.num_cores = 2*(multiprocessing.cpu_count()//3)
-        self.num_cores = 3
-        if 'njobs' in args.keys():
-            self.num_cores = args['njobs']
+### functions to parallelize ###
+def _dist_func(dataset, metric, mmsis, dim_set, id_b, id_a, s_a, dist_matrix):
+    # trajectory b
+    s_b = [dataset[mmsis[id_b]][dim] for dim in dim_set]
+    # compute distance
+    if metric == 'dtw':
+        dist_matrix[mmsis[id_a]][mmsis[id_b]] = fastdtw(np.array(s_a).T, np.array(s_b).T, dist=haversine)[0]
+    else:
+        dist_matrix[mmsis[id_a]][mmsis[id_b]] = MD(np.array(s_a).T, np.array(s_b).T)
+    dist_matrix[mmsis[id_b]][mmsis[id_a]] = dist_matrix[mmsis[id_a]][mmsis[id_b]]
 
-        self.features_opt = 'dtw'
-        if 'features_opt' in args.keys():
-            self.features_opt = args['features_opt']
 
-        self._dim_set = ['lat', 'lon']
-        self._mmsis = list(self.dataset.keys())
-        self._calc_dists()
+def compute_distance_matrix(dataset, path, verbose=True, njobs=3, metric='dtw'):
+    if not os.path.exists(path):
+        _dim_set = ['lat', 'lon']
+        _mmsis = list(dataset.keys())
 
-        # saving features
-        if 'folder' in args.keys():
-            self.path = args['folder']
-
-            if not os.path.exists(self.path):
-                os.makedirs(self.path)
-
-            pickle.dump(self.dm, open(f'{self.path}/features_distance.p', 'wb'))
-            df_features = pd.DataFrame(self.dm)
-            df_features.to_csv(f'{self.path}/features_distance.csv')
-            self.dm_path = f'{self.path}/features_distance.p'
-
-    def _calc_dists(self):
         dist_matrix = {}
-        for id_a in range(len(self._mmsis)):
-            dist_matrix[self._mmsis[id_a]] = {}
+        for id_a in range(len(_mmsis)):
+            dist_matrix[_mmsis[id_a]] = {}
 
-        # save state
-        if os.path.exists(f'save_state/dtw_dist_matrix_matrix.p'):
-            dist_matrix = pickle.load(open(f'save_state/dtw_dist_matrix_matrix.p', 'rb'))
-            id_a = pickle.load(open(f'save_state/dtw_id_a_matrix.p', 'rb'))
-            print(dist_matrix)
-        else:
-            id_a = 0
-            pickle.dump(dist_matrix, open(f'save_state/dtw_dist_matrix_matrix.p', 'wb'))
-            pickle.dump(id_a, open(f'save_state/dtw_id_a_matrix.p', 'wb'))
-
-        # for id_a in range(len(self._ids)):
-        while id_a < len(self._mmsis):
-            if self.verbose:
-                print(f"{self.features_opt}: {id_a} of {len(self._mmsis)}")
-            dist_matrix[self._mmsis[id_a]][self._mmsis[id_a]] = 0
+        for id_a in range(len(_mmsis)):
+            if verbose:
+                print(f"{metric}: {id_a} of {len(_mmsis)}")
+            dist_matrix[_mmsis[id_a]][_mmsis[id_a]] = 0
             # trajectory a
-            s_a = [self.dataset[self._mmsis[id_a]][dim] for dim in self._dim_set]
-            Parallel(n_jobs=self.num_cores, require='sharedmem')(delayed(self._dist_func)(id_b, id_a, s_a, dist_matrix) for id_b in list(range(id_a + 1, len(self._mmsis))))
-
-            id_a = id_a + 1
-            pickle.dump(dist_matrix, open(f'save_state/dtw_dist_matrix_matrix.p', 'wb'))
-            pickle.dump(id_a, open(f'save_state/dtw_id_a_matrix.p', 'wb'))
-
-        # delete save state
-        os.remove(f'save_state/dtw_dist_matrix_matrix.p')
-        os.remove(f'save_state/dtw_id_a_matrix.p')
+            s_a = [dataset[_mmsis[id_a]][dim] for dim in _dim_set]
+            Parallel(n_jobs=njobs, require='sharedmem')(delayed(_dist_func)(dataset, metric, _mmsis, _dim_set, id_b, id_a,
+                                                                            s_a, dist_matrix)
+                                                        for id_b in list(range(id_a + 1, len(_mmsis))))
 
         dist_matrix = dict_reorder(dist_matrix)
-        self.dm = np.array([list(item.values()) for item in dist_matrix.values()])
+        dm = np.array([list(item.values()) for item in dist_matrix.values()])
 
-    ### functions to parallelize ###
-    def _dist_func(self, id_b, id_a, s_a, dist_matrix):
-        # trajectory b
-        s_b = [self.dataset[self._mmsis[id_b]][dim] for dim in self._dim_set]
-        # compute distance
-        if self.features_opt == 'dtw':
-            dist_matrix[self._mmsis[id_a]][self._mmsis[id_b]] = fastdtw(np.array(s_a).T, np.array(s_b).T, dist=haversine)[0]
-        else:
-            dist_matrix[self._mmsis[id_a]][self._mmsis[id_b]] = MD(np.array(s_a).T, np.array(s_b).T)
-        dist_matrix[self._mmsis[id_b]][self._mmsis[id_a]] = dist_matrix[self._mmsis[id_a]][self._mmsis[id_b]]
+        # saving features
+        os.makedirs(path)
+        pickle.dump(dm, open(f'{path}/features_distance.p', 'wb'))
+    else:
+        print('Distances already computed.')
+    dm_path = f'{path}/features_distance.p'
+    return dm_path

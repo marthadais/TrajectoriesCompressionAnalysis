@@ -256,7 +256,7 @@ class Trajectories:
 
         new_dataset.to_csv(self.preprocessed_path, index=False)
 
-    def get_dataset(self, compress=None):
+    def get_dataset(self, compress=None, alpha=1):
         """
         It converts the csv dataset into dict format.
         :return: dataset in a dict format.
@@ -264,11 +264,11 @@ class Trajectories:
         # reading cleaned data
         if compress is not None:
             self.compress = compress
-            self.compress_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{self.compress}_{self._day_name}_trips.csv"
+            self.compress_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{self.compress}_{alpha}_{self._day_name}_trips.csv"
             if self.region is not None:
-                self.compress_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_compress_{self.compress}_{self._day_name}_trips.csv"
+                self.compress_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_compress_{self.compress}_{alpha}_{self._day_name}_trips.csv"
             if not os.path.exists(self.compress_path):
-                self._compress_trips()
+                self._compress_trips(alpha)
                 print(f'Preprocessed trips data save at: {self.compress_path}')
             dataset = pd.read_csv(self.compress_path, parse_dates=['time'])
         else:
@@ -292,8 +292,8 @@ class Trajectories:
 
         return new_dataset
 
-    def _compress_trips(self):
+    def _compress_trips(self, alpha=1):
         dataset_dict = self.get_dataset()
-        compress_dataset = compression(dataset=dataset_dict, metric=self.compress)
+        compress_dataset = compression(dataset=dataset_dict, metric=self.compress, alpha=1)
         dataset = dict_to_pandas(compress_dataset)
         dataset.to_csv(self.compress_path, index=False)

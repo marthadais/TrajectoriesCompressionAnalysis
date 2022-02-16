@@ -161,7 +161,8 @@ def traj_compression(trajectory, dim_set, traj_time, calc_func, epsilon):
     return new_trajectory
 
 
-def compression(dataset, metric=None, verbose=True):
+def compression(dataset, metric=None, verbose=True, alpha=1):
+    sys.setrecursionlimit(2200)
     metrics = {'TR': calc_SED,
                'PD': calc_PD,
                'SP': calc_AVS}
@@ -191,14 +192,12 @@ def compression(dataset, metric=None, verbose=True):
 
         # compress trajectory
         try:
-            compress_traj = traj_compression(curr_traj, dim_set, traj_time, calc_func, epsilon)
+            compress_traj = traj_compression(curr_traj, dim_set, traj_time, calc_func, epsilon*alpha)
             compress_traj['time'] = compress_traj['time'].astype('datetime64[s]')
-            # compress_traj['reduction'] = [len(curr_traj['lat']), len(compress_traj['lat']), len(compress_traj['lat'])/len(curr_traj['lat'])]
+            new_dataset[mmsis[id_mmsi]] = compress_traj
         except:
-            print('It was not possible to compress this trajectory.')
-            compress_traj = curr_traj
-        new_dataset[mmsis[id_mmsi]] = compress_traj
-        if verbose:
-            print(f"\tlength before: {len(curr_traj['lat'])}, length now: {len(compress_traj['lat'])}, reduction of {1 - len(compress_traj['lat'])/len(curr_traj['lat'])}")
+            print(f"It was not possible to compress this trajectory {mmsis[id_mmsi]} of length {len(curr_traj['lat'])}.")
+        # if verbose:
+        #     print(f"\tlength before: {len(curr_traj['lat'])}, length now: {len(compress_traj['lat'])}, reduction of {1 - len(compress_traj['lat'])/len(curr_traj['lat'])}")
 
     return new_dataset
