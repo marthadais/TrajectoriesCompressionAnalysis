@@ -7,6 +7,7 @@ from zipfile import ZipFile
 from urllib.request import urlopen
 from datetime import timedelta
 from src.compression import compression
+import pickle
 import warnings
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -177,7 +178,6 @@ class Trajectories:
         self.dataset_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._day_name}_time_period.csv"
         self.cleaned_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._day_name}_clean.csv"
         self.preprocessed_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_{self._day_name}_trips.csv"
-        self.compress_path = None
         if self.region is not None:
             self.preprocessed_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_{self._day_name}_trips.csv"
 
@@ -256,23 +256,12 @@ class Trajectories:
 
         new_dataset.to_csv(self.preprocessed_path, index=False)
 
-    def get_dataset(self, compress=None, alpha=1):
+    def get_dataset(self):
         """
         It converts the csv dataset into dict format.
         :return: dataset in a dict format.
         """
-        # reading cleaned data
-        if compress is not None:
-            self.compress = compress
-            self.compress_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{self.compress}_{alpha}_{self._day_name}_trips.csv"
-            if self.region is not None:
-                self.compress_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_compress_{self.compress}_{alpha}_{self._day_name}_trips.csv"
-            if not os.path.exists(self.compress_path):
-                self._compress_trips(alpha)
-                print(f'Preprocessed trips data save at: {self.compress_path}')
-            dataset = pd.read_csv(self.compress_path, parse_dates=['time'])
-        else:
-            dataset = pd.read_csv(self.preprocessed_path, parse_dates=['time'])
+        dataset = pd.read_csv(self.preprocessed_path, parse_dates=['time'])
         dataset['time'] = dataset['time'].astype('datetime64[ns]')
         dataset = dataset.sort_values(by=['trajectory', "time"])
 
@@ -292,8 +281,38 @@ class Trajectories:
 
         return new_dataset
 
-    def _compress_trips(self, alpha=1):
-        dataset_dict = self.get_dataset()
-        compress_dataset = compression(dataset=dataset_dict, metric=self.compress, alpha=1)
-        dataset = dict_to_pandas(compress_dataset)
-        dataset.to_csv(self.compress_path, index=False)
+    def compress_trips(self, compress='DP', alpha=1):
+        compress_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_trips.csv"
+        compress_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_compress_rate.p"
+        time_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_compress_time.p"
+        if self.region is not None:
+            compress_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_region_{self.region}_{self._day_name}_trips.csv"
+            compress_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_region_{self.region}_{self._day_name}_compress_rate.p"
+            time_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_region_{self.region}_{self._day_name}_compress_time.p"
+        if not os.path.exists(compress_path):
+            if not os.path.exists(f"./data/preprocessed/compressed/"):
+                os.makedirs(f"./data/preprocessed/compressed/")
+            dataset_dict = self.get_dataset()
+            compress_dataset, compression_rate, processing_time = compression(dataset=dataset_dict, metric=compress, alpha=alpha)
+            dataset = dict_to_pandas(compress_dataset)
+            dataset.to_csv(compress_path, index=False)
+            pickle.dump(compression_rate, open(compress_rate_path, 'wb'))
+            pickle.dump(processing_time, open(time_rate_path, 'wb'))
+        else:
+            dataset = pd.read_csv(compress_path, parse_dates=['time'])
+            compression_rate = pickle.load(open(compress_rate_path, 'rb'))
+            processing_time = pickle.load(open(time_rate_path, 'rb'))
+            dataset['time'] = dataset['time'].astype('datetime64[ns]')
+            dataset = dataset.sort_values(by=['trajectory', "time"])
+            compress_dataset = {}
+            ids = dataset['trajectory'].unique()
+            for id in ids:
+                # getting one trajectory
+                trajectory = dataset[dataset['trajectory'] == id]
+                trajectory.set_index(['trajectory'])
+                # converting trajectory to dict
+                compress_dataset[id] = {}
+                for col in trajectory.columns:
+                    compress_dataset[id][col] = np.array(trajectory[col])
+
+        return compress_dataset, compression_rate, processing_time

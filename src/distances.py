@@ -6,6 +6,7 @@ import pickle
 import os
 from joblib import Parallel, delayed
 from itertools import product
+import time
 
 
 def dict_reorder(x):
@@ -79,8 +80,9 @@ def MD(a, b):
 
 
 ### functions to parallelize ###
-def _dist_func(dataset, metric, mmsis, dim_set, id_b, id_a, s_a, dist_matrix):
+def _dist_func(dataset, metric, mmsis, dim_set, id_b, id_a, s_a, dist_matrix, process_time):
     # trajectory b
+    t0 = time.time_ns()
     s_b = [dataset[mmsis[id_b]][dim] for dim in dim_set]
     # compute distance
     if metric == 'dtw':
@@ -88,6 +90,9 @@ def _dist_func(dataset, metric, mmsis, dim_set, id_b, id_a, s_a, dist_matrix):
     else:
         dist_matrix[mmsis[id_a]][mmsis[id_b]] = MD(np.array(s_a).T, np.array(s_b).T)
     dist_matrix[mmsis[id_b]][mmsis[id_a]] = dist_matrix[mmsis[id_a]][mmsis[id_b]]
+    t1 = time.time_ns() - t0
+    process_time[mmsis[id_a]][mmsis[id_b]] = t1
+    process_time[mmsis[id_b]][mmsis[id_a]] = t1
 
 
 def compute_distance_matrix(dataset, path, verbose=True, njobs=3, metric='dtw'):
@@ -96,8 +101,10 @@ def compute_distance_matrix(dataset, path, verbose=True, njobs=3, metric='dtw'):
         _mmsis = list(dataset.keys())
 
         dist_matrix = {}
+        process_time = {}
         for id_a in range(len(_mmsis)):
             dist_matrix[_mmsis[id_a]] = {}
+            process_time[_mmsis[id_a]] = {}
 
         for id_a in range(len(_mmsis)):
             if verbose:
@@ -106,7 +113,7 @@ def compute_distance_matrix(dataset, path, verbose=True, njobs=3, metric='dtw'):
             # trajectory a
             s_a = [dataset[_mmsis[id_a]][dim] for dim in _dim_set]
             Parallel(n_jobs=njobs, require='sharedmem')(delayed(_dist_func)(dataset, metric, _mmsis, _dim_set, id_b, id_a,
-                                                                            s_a, dist_matrix)
+                                                                            s_a, dist_matrix, process_time)
                                                         for id_b in list(range(id_a + 1, len(_mmsis))))
 
         dist_matrix = dict_reorder(dist_matrix)
@@ -115,7 +122,9 @@ def compute_distance_matrix(dataset, path, verbose=True, njobs=3, metric='dtw'):
         # saving features
         os.makedirs(path)
         pickle.dump(dm, open(f'{path}/features_distance.p', 'wb'))
+        pickle.dump(process_time, open(f'{path}/features_distance_process_time.p', 'wb'))
     else:
         print('Distances already computed.')
     dm_path = f'{path}/features_distance.p'
-    return dm_path
+    process_time_path = f'{path}/features_distance_process_time.p'
+    return dm_path, process_time_path
