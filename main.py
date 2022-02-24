@@ -1,7 +1,5 @@
 from preprocessing.clean_trajectories import Trajectories
-from src.distances import compute_distance_matrix
 from datetime import datetime
-import pickle
 import src.analysis as analysis
 import os
 
@@ -36,18 +34,23 @@ if not os.path.exists(folder):
 
 rates1, times1 = analysis.factor_analysis(dataset, 'DP', folder)
 measure = analysis.factor_dist_analysis(dataset, 'DP', folder)
+measure_purity = analysis.factor_cluster_analysis(dataset, 'DP', folder)
 
 rates2, times2 = analysis.factor_analysis(dataset, 'TR', folder)
 measure_rt = analysis.factor_dist_analysis(dataset, 'TR', folder)
+measure_purity_rt = analysis.factor_cluster_analysis(dataset, 'TR', folder)
 
 rates3, times3 = analysis.factor_analysis(dataset, 'SP', folder)
 measure_sp = analysis.factor_dist_analysis(dataset, 'SP', folder)
+measure_purity_SP = analysis.factor_cluster_analysis(dataset, 'SP', folder)
 
 rates4, times4 = analysis.factor_analysis(dataset, 'TR_SP', folder)
 measure_tr_sp = analysis.factor_dist_analysis(dataset, 'TR_SP', folder)
+measure_purity_tr_sp = analysis.factor_cluster_analysis(dataset, 'TR_SP', folder)
 
 rates5, times5 = analysis.factor_analysis(dataset, 'SP_TR', folder)
 measure_sp_tr = analysis.factor_dist_analysis(dataset, 'SP_TR', folder)
+measure_purity_sp_tr = analysis.factor_cluster_analysis(dataset, 'SP_TR', folder)
 
 analysis.lines_compression(folder)
 

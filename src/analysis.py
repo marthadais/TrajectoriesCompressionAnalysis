@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import pickle
 from src.distances import compute_distance_matrix
 from src.clustering import Clustering
+from sklearn import metrics
+
 
 def lines_compression(folder):
     options = ['TR', 'DP', 'SP', 'TR_SP', 'SP_TR']
@@ -74,7 +76,6 @@ def lines_compression(folder):
     i = 0
     for compress_opt in options:
         times = pd.read_csv(f'{folder}/clustering_{compress_opt}_times.csv', index_col=0)
-        avgs = pd.concat([avgs, times], axis=1)
         plt.plot(times, color=col[i], marker="o", linestyle="-",
                  linewidth=3, markersize=10, label=compress_opt)
         i = i + 1
@@ -85,6 +86,24 @@ def lines_compression(folder):
     plt.yticks(fontsize=15)
     plt.tight_layout()
     plt.savefig(f'{folder}/lines-clustering-times.png', bbox_inches='tight')
+    plt.close()
+
+    # figure of the clustering purity
+    fig = plt.figure(figsize=(10, 7))
+    col = ['red', 'blue', 'green', 'orange', 'yellow']
+    i = 0
+    for compress_opt in options:
+        purity = pd.read_csv(f'{folder}/clustering_{compress_opt}_purity.csv', index_col=0)
+        plt.plot(purity, color=col[i], marker="o", linestyle="-",
+                 linewidth=3, markersize=10, label=compress_opt)
+        i = i + 1
+    plt.ylabel('Processing Time (s)', fontsize=15)
+    plt.xlabel('Factors', fontsize=15)
+    plt.legend(fontsize=15)
+    plt.xticks(range(len(purity)), purity.index, fontsize=15, rotation=45)
+    plt.yticks(fontsize=15)
+    plt.tight_layout()
+    plt.savefig(f'{folder}/lines-clustering-purity.png', bbox_inches='tight')
     plt.close()
 
 
@@ -212,9 +231,7 @@ def factor_dist_analysis(dataset, compress_opt, folder, ncores=4):
         dtw_factor = pickle.load(open(features_path, 'rb'))
         measures[i] = {}
         measures[i]['spearman-pvalue'], measures[i]['spearman-corr'] = permutation(dtw_raw, dtw_factor)
-        measures[i]['Ttest_ind-pvalue'], measures[i]['Ttest_ind-sigma'] = permutation(dtw_raw, dtw_factor, measure='Ttest_ind')
         print(f"spearman - factor {i}: {measures[i]['spearman-corr']} - {measures[i]['spearman-pvalue']}")
-        print(f"Ttest_ind - factor {i}: {measures[i]['Ttest_ind-sigma']} - {measures[i]['Ttest_ind-pvalue']}")
 
         dtw_factor_time = get_time_dtw(feature_time)
         times = pd.concat([times, pd.DataFrame(dtw_factor_time)], axis=1)
@@ -240,4 +257,43 @@ def factor_dist_analysis(dataset, compress_opt, folder, ncores=4):
     plt.close()
 
     return measures
+
+
+def purity_score(y_true, y_pred):
+    # compute contingency matrix (also called confusion matrix)
+    contingency_matrix = metrics.cluster.contingency_matrix(y_true, y_pred)
+    # return purity
+    return np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+
+
+def factor_cluster_analysis(dataset, compress_opt, folder, ncores=4):
+    factors = [2, 1.5, 1, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128]
+    measures_purity = {}
+    # comparing distances
+    features_folder = f'{folder}/NO/'
+    if not os.path.exists(features_folder):
+        os.makedirs(features_folder)
+    features_path, main_time = compute_distance_matrix(dataset.get_dataset(), features_folder, verbose=True, njobs=ncores, metric='dtw')
+    #clustering
+    labels_raw = Clustering(ais_data_path=dataset.preprocessed_path, distance_matrix_path=features_path,
+                                       cluster_algorithm='hierarchical', folder=features_folder, norm_dist=True, k=5).labels
+    for i in factors:
+        comp_dataset, comp_rate, comp_times = dataset.compress_trips(compress=compress_opt, alpha=i)
+        features_folder = f'{folder}/{compress_opt}-{i}/'
+        if not os.path.exists(features_folder):
+            os.makedirs(features_folder)
+        print({features_folder})
+        # DTW distances
+        features_path, feature_time = compute_distance_matrix(comp_dataset, features_folder, verbose=True,
+                                                                   njobs=ncores, metric='dtw')
+        # clustering
+        labels_factor = Clustering(ais_data_path=dataset.preprocessed_path, distance_matrix_path=features_path,
+                                      cluster_algorithm='hierarchical', folder=features_folder, norm_dist=True, k=5).labels
+        measures_purity[str(i)] = purity_score(labels_raw, labels_factor)
+        print(f'Purity with factor {i}: {measures_purity[str(i)]}')
+
+    measures_purity = pd.Series(measures_purity)
+    measures_purity.to_csv(f'{folder}/clustering_{compress_opt}_purity.csv')
+
+    return measures_purity
 

@@ -131,9 +131,6 @@ def create_algorithms_dict():
 
 
 class Clustering:
-    """
-    It reads the distance matrix and execute the clustering algortihm.
-    """
     def __init__(self, ais_data_path, distance_matrix_path, verbose=True, **args):
         """
         It receives the preprocessed DCAIS dataset in dict format.
@@ -151,7 +148,6 @@ class Clustering:
         self.SC = None
         self.SC_cluster_mean = None
         self.SC_sample = None
-        self.results_file_path = None
 
         self.cluster_algorithm = 'dbscan'
         if 'cluster_algorithm' in args.keys():
@@ -179,6 +175,7 @@ class Clustering:
 
         # saving features
         self.path = None
+        self.labels_file_path = None
         self.results_file_path = None
         if 'folder' in args.keys():
             aux = args['folder']
@@ -189,12 +186,30 @@ class Clustering:
             if not os.path.exists(self.path):
                 os.makedirs(self.path)
 
-        t0 = time.time_ns()
-        self.computer_clustering()
-        t1 = time.time_ns() - t0
-        self.time_elapsed = t1
-        if self.cluster_algorithm == 'hierarchical':
-            plot_dendrogram(self.dm, self.path)
+            if self.cluster_algorithm == 'dbscan':
+                self.results_file_path = f'{self.path}/{self.cluster_algorithm}_{self.eps}.csv'
+                self.labels_file_path = f'{self.path}/labels_{self.cluster_algorithm}_{self.eps}.csv'
+                self.time_path = f'{self.path}/time_{self.cluster_algorithm}_{self.eps}.csv'
+            elif self.cluster_algorithm == 'hierarchical':
+                self.results_file_path = f'{self.path}/{self.cluster_algorithm}_{self._k}_{self._linkage}.csv'
+                self.labels_file_path = f'{self.path}/labels_{self.cluster_algorithm}_{self._k}_{self._linkage}.csv'
+                self.time_path = f'{self.path}/time_{self.cluster_algorithm}_{self._k}_{self._linkage}.csv'
+            else:
+                self.results_file_path = f'{self.path}/{self.cluster_algorithm}_{self._k}.csv'
+                self.labels_file_path = f'{self.path}/labels_{self.cluster_algorithm}_{self._k}.csv'
+                self.time_path = f'{self.path}/time_{self.cluster_algorithm}_{self._k}.csv'
+
+        if not os.path.exists(self.results_file_path):
+            t0 = time.time_ns()
+            self.computer_clustering()
+            t1 = time.time_ns() - t0
+            self.time_elapsed = t1
+            pickle.dump(self.time_elapsed, open(self.time_path, 'wb'))
+            if self.cluster_algorithm == 'hierarchical':
+                plot_dendrogram(self.dm, self.path)
+        else:
+            self.time_elapsed = pickle.load(open(self.time_path, 'rb'))
+            self.labels = pd.read_csv(self.labels_file_path).Clusters
 
     def computer_clustering(self):
         """
@@ -322,6 +337,7 @@ class Clustering:
         aux = aux.map(sc)
         aux.name = 'silhouette'
         cluster_dataset = pd.concat([cluster_dataset, aux], axis=1)
+        labels_mmsi = cluster_dataset[['mmsi', 'trajectory', 'Clusters']].drop_duplicates()
 
         aux_data = cluster_dataset[['trajectory', 'silhouette']].copy()
         aux_data.drop_duplicates(['trajectory'], inplace=True)
@@ -335,11 +351,8 @@ class Clustering:
 
         cluster_dataset = cluster_dataset.assign(Cl_Silhouette=self.SC)
 
-        if self.cluster_algorithm == 'dbscan':
-            self.results_file_path = f'{self.path}/{self.cluster_algorithm}_{self.eps}.csv'
-        elif self.cluster_algorithm == 'hierarchical':
-            self.results_file_path = f'{self.path}/{self.cluster_algorithm}_{self._k}_{self._linkage}.csv'
-        else:
-            self.results_file_path = f'{self.path}/{self.cluster_algorithm}_{self._k}.csv'
-
         cluster_dataset.to_csv(self.results_file_path)
+        labels_mmsi.to_csv(self.labels_file_path)
+    """
+    It reads the distance matrix and execute the clustering algortihm.
+    """

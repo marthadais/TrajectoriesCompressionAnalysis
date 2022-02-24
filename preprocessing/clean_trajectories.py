@@ -270,7 +270,7 @@ class Trajectories:
         It converts the csv dataset into dict format.
         :return: dataset in a dict format.
         """
-        dataset = pd.read_csv(self.preprocessed_path, parse_dates=['time'])
+        dataset = pd.read_csv(self.preprocessed_path, parse_dates=['time'], low_memory=False)
         dataset['time'] = dataset['time'].astype('datetime64[ns]')
         dataset = dataset.sort_values(by=['trajectory', "time"])
 
@@ -291,6 +291,8 @@ class Trajectories:
         return new_dataset
 
     def compress_trips(self, compress='DP', alpha=1):
+        dataset_dict = self.get_dataset()
+
         self.compress_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_trips.csv"
         self.compress_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_compress_rate.p"
         self.time_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_compress_time.p"
@@ -301,7 +303,6 @@ class Trajectories:
         if not os.path.exists(self.compress_path):
             if not os.path.exists(f"./data/preprocessed/compressed/"):
                 os.makedirs(f"./data/preprocessed/compressed/")
-            dataset_dict = self.get_dataset()
             compress_dataset, compression_rate, processing_time = compression(dataset=dataset_dict, metric=compress, alpha=alpha)
             dataset = dict_to_pandas(compress_dataset)
             dataset.to_csv(self.compress_path, index=False)
