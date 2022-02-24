@@ -1,7 +1,6 @@
 import numpy as np
 import time
 import sys
-import threading
 # adapt from https://github.com/uestc-db/traj-compression/blob/master/batch/TD-TR/TD-TR.cpp
 import pandas as pd
 

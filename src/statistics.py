@@ -94,7 +94,7 @@ def statistics(dataset, col='trajectory', folder='./results_data/'):
     for i in vt_trajectory:
         sample = dataset[dataset[col] == i]
         row = [i, sample['mmsi'].iloc[0], sample['Clusters'].iloc[0], sample.shape[0],
-               len(np.unique(sample['vessel_type'])), np.unique(sample['vessel_type']), len(np.unique(sample['flag'])), np.unique(sample['flag']),
+               len(np.unique(sample['vessel_type'])), np.unique(sample['vessel_type']), len(np.unique(sample['flag'].astype(str))), np.unique(sample['flag'].astype(str)),
                sample['silhouette'].iloc[0], sample['threshold_std'].iloc[0], sample['scores-3std'].iloc[0],
                sample['lat'].mean(), sample['lat'].std(), sample['lon'].mean(), sample['lon'].std()]
         row = pd.DataFrame([row], columns=[col, 'mmsi', 'cluster', 'n_observations', 'n_vessel_type','vessel_type',
@@ -129,7 +129,7 @@ def statistics_clusters(dataset, col='Clusters', folder='./results_data/'):
         row = [i, sample['Cl_Silhouette'].unique()[0], sample_trajectory['silhouette'].mean(), sample['silhouette'].std(), sample['threshold_std'].iloc[0], (sample_trajectory['scores-3std'] == 1).sum(), (sample_trajectory['scores-3std'] == -1).sum(),
                sample['lat'].mean(), sample['lat'].std(), sample['lon'].mean(), sample['lon'].std(), len(sample_trajectory), len(sample['mmsi'].unique()),
                len(np.unique(sample['vessel_type'])), np.unique(sample['vessel_type']),
-               len(sample['flag'].unique()), list(np.unique(sample['flag']))]
+               len(sample['flag'].unique()), list(np.unique(sample['flag'].astype(str)))]
         row = pd.DataFrame([row], columns=[col, 'cl_silhouette', 'sc_mean', 'sc_std', 'threshold_std', 'non-outliers', 'outliers',
                                            'lat_avg', 'lat_std', 'lon_avg', 'lon_std', 'n_trajectory', 'n_mmsi', 'n_vessel_types',
                                            'vessel_types', 'n_flags', 'flags'])

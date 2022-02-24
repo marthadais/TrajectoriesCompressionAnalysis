@@ -181,6 +181,10 @@ class Trajectories:
         if self.region is not None:
             self.preprocessed_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_{self._day_name}_trips.csv"
 
+        self.compress_path = None
+        self.compress_rate_path = None
+        self.time_rate_path = None
+
         if not os.path.exists(self.dataset_path):
             create_dataset_noaa(self.dataset_path, vt=self._vt, time_period=time_period)
             print(f'Preprocessed data save at: {self.dataset_path}')
@@ -237,12 +241,17 @@ class Trajectories:
 
             # if is inside the selected region and contains enough observations
             if isin_region:
+                # observations that is in the region
+                trajectory_crop = trajectory[
+                    (trajectory['lon'] >= self.region[2]) & (trajectory['lon'] <= self.region[3]) & (
+                            trajectory['lat'] >= self.region[0]) & (trajectory['lat'] <= self.region[1])]
                 # include trajectory id
-                aux_col = pd.DataFrame({'trajectory': np.repeat(count_traj, trajectory.shape[0])})
-                trajectory.reset_index(drop=True, inplace=True)
-                trajectory = pd.concat([aux_col, trajectory], axis=1)
+                aux_col = pd.DataFrame({'trajectory': np.repeat(count_traj, trajectory_crop.shape[0])})
+                trajectory_crop.reset_index(drop=True, inplace=True)
+
+                trajectory_crop = pd.concat([aux_col, trajectory_crop], axis=1)
                 # add trajectory
-                new_dataset = pd.concat([new_dataset, trajectory], axis=0, ignore_index=True)
+                new_dataset = pd.concat([new_dataset, trajectory_crop], axis=0, ignore_index=True)
                 count_traj = count_traj + 1
             count_mmsi = count_mmsi + 1
 
@@ -282,26 +291,27 @@ class Trajectories:
         return new_dataset
 
     def compress_trips(self, compress='DP', alpha=1):
-        compress_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_trips.csv"
-        compress_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_compress_rate.p"
-        time_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_compress_time.p"
+        self.compress_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_trips.csv"
+        self.compress_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_compress_rate.p"
+        self.time_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_compress_time.p"
         if self.region is not None:
-            compress_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_region_{self.region}_{self._day_name}_trips.csv"
-            compress_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_region_{self.region}_{self._day_name}_compress_rate.p"
-            time_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_region_{self.region}_{self._day_name}_compress_time.p"
-        if not os.path.exists(compress_path):
+            self.compress_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_region_{self.region}_{self._day_name}_trips.csv"
+            self.compress_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_region_{self.region}_{self._day_name}_compress_rate.p"
+            self.time_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_region_{self.region}_{self._day_name}_compress_time.p"
+        if not os.path.exists(self.compress_path):
             if not os.path.exists(f"./data/preprocessed/compressed/"):
                 os.makedirs(f"./data/preprocessed/compressed/")
             dataset_dict = self.get_dataset()
             compress_dataset, compression_rate, processing_time = compression(dataset=dataset_dict, metric=compress, alpha=alpha)
             dataset = dict_to_pandas(compress_dataset)
-            dataset.to_csv(compress_path, index=False)
-            pickle.dump(compression_rate, open(compress_rate_path, 'wb'))
-            pickle.dump(processing_time, open(time_rate_path, 'wb'))
+            dataset.to_csv(self.compress_path, index=False)
+            pickle.dump(compression_rate, open(self.compress_rate_path, 'wb'))
+            pickle.dump(processing_time, open(self.time_rate_path, 'wb'))
         else:
-            dataset = pd.read_csv(compress_path, parse_dates=['time'])
-            compression_rate = pickle.load(open(compress_rate_path, 'rb'))
-            processing_time = pickle.load(open(time_rate_path, 'rb'))
+            # print('\tCompression already computed')
+            dataset = pd.read_csv(self.compress_path, parse_dates=['time'])
+            compression_rate = pickle.load(open(self.compress_rate_path, 'rb'))
+            processing_time = pickle.load(open(self.time_rate_path, 'rb'))
             dataset['time'] = dataset['time'].astype('datetime64[ns]')
             dataset = dataset.sort_values(by=['trajectory', "time"])
             compress_dataset = {}

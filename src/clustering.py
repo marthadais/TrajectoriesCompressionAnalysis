@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn import metrics
 import src.statistics as st
 from scipy.cluster.hierarchy import dendrogram
+import time
 
 
 def my_DBSCAN(data, **args):
@@ -188,7 +189,10 @@ class Clustering:
             if not os.path.exists(self.path):
                 os.makedirs(self.path)
 
+        t0 = time.time_ns()
         self.computer_clustering()
+        t1 = time.time_ns() - t0
+        self.time_elapsed = t1
         if self.cluster_algorithm == 'hierarchical':
             plot_dendrogram(self.dm, self.path)
 

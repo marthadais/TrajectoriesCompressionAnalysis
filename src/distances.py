@@ -96,7 +96,7 @@ def _dist_func(dataset, metric, mmsis, dim_set, id_b, id_a, s_a, dist_matrix, pr
 
 
 def compute_distance_matrix(dataset, path, verbose=True, njobs=3, metric='dtw'):
-    if not os.path.exists(path):
+    if not os.path.exists(f'{path}/features_distance.p'):
         _dim_set = ['lat', 'lon']
         _mmsis = list(dataset.keys())
 
@@ -117,14 +117,14 @@ def compute_distance_matrix(dataset, path, verbose=True, njobs=3, metric='dtw'):
                                                         for id_b in list(range(id_a + 1, len(_mmsis))))
 
         dist_matrix = dict_reorder(dist_matrix)
+        process_time = dict_reorder(process_time)
         dm = np.array([list(item.values()) for item in dist_matrix.values()])
 
         # saving features
-        os.makedirs(path)
         pickle.dump(dm, open(f'{path}/features_distance.p', 'wb'))
         pickle.dump(process_time, open(f'{path}/features_distance_process_time.p', 'wb'))
-    else:
-        print('Distances already computed.')
+    # else:
+        # print('\tDistances already computed.')
     dm_path = f'{path}/features_distance.p'
     process_time_path = f'{path}/features_distance_process_time.p'
     return dm_path, process_time_path
