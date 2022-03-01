@@ -148,7 +148,7 @@ def file_statistics(file, directory):
     :param file: the path were is the dataset
     :param directory: the path were is the clustering results to save the statistics
     """
-    dataset = pd.read_csv(file)
+    dataset = pd.read_csv(file, low_memory=False)
     dataset['time'] = dataset['time'].astype('datetime64[ns]')
 
     trajectory_df = dataset.loc[:, ['trajectory', 'silhouette', 'Clusters', 'threshold_std']]
