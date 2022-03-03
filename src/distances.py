@@ -121,10 +121,11 @@ def compute_distance_matrix(dataset, path, verbose=True, njobs=3, metric='dtw'):
         dm = np.array([list(item.values()) for item in dist_matrix.values()])
 
         # saving features
+        os.makedirs(path, exist_ok=True)
         pickle.dump(dm, open(f'{path}/features_distance.p', 'wb'))
-        pickle.dump(process_time, open(f'{path}/features_distance_process_time.p', 'wb'))
+        pickle.dump(process_time, open(f'{path}/distances_process_time.p', 'wb'))
     # else:
         # print('\tDistances already computed.')
     dm_path = f'{path}/features_distance.p'
-    process_time_path = f'{path}/features_distance_process_time.p'
+    process_time_path = f'{path}/distances_process_time.p'
     return dm_path, process_time_path

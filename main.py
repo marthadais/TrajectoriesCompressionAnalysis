@@ -7,14 +7,15 @@ print('Starting')
 ### Reading and cleaning dataset
 # Number of vessels
 n_samples = None
+# https://coast.noaa.gov/data/marinecadastre/ais/VesselTypeCodes2018.pdf
 #FISHING
 # vessel_type = [30, 1001, 1002]
 #CARGO:
-vessel_type = list(range(70, 80)) + [1003, 1004, 1016]
+# vessel_type = list(range(70, 80)) + [1003, 1004, 1016]
 #PASSANGER:
 # vessel_type = list(range(60, 70)) + [1012, 1013, 1014, 1015]
 #TUG TOW:
-# vessel_type = [21, 22, 31, 32, 52, 1023, 1025]
+vessel_type = [21, 22, 31, 32, 52, 1023, 1025]
 #TANKER:
 # vessel_type = list(range(80, 90)) + [1017, 1024]
 #MILITARY:
@@ -42,8 +43,7 @@ if region_limits is not None:
 
 if not os.path.exists(folder):
     os.makedirs(folder)
-# dataset_dict = dataset.get_dataset()
-#
+
 rates1, times1 = analysis.factor_analysis(dataset, 'DP', folder)
 measure = analysis.factor_dist_analysis(dataset, 'DP', folder)
 measure_purity = analysis.factor_cluster_analysis(dataset, 'DP', folder)

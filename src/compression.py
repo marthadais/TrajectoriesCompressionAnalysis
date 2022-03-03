@@ -217,7 +217,7 @@ def traj_compression(trajectory, dim_set, traj_time, calc_func, epsilon):
 
 
 def compression(dataset, metric='TR', verbose=True, alpha=1):
-    sys.setrecursionlimit(2200)
+    # sys.setrecursionlimit(2200)
     metrics = {'TR': calc_SED,
                'DP': calc_DP,
                'SP': calc_AVS,
@@ -272,3 +272,4 @@ def compression(dataset, metric='TR', verbose=True, alpha=1):
         processing_time = np.append(processing_time, t1)
 
     return new_dataset, compression_rate, processing_time
+

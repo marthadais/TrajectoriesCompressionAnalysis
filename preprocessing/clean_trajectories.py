@@ -175,11 +175,11 @@ class Trajectories:
             os.makedirs('./data/preprocessed/')
 
         self._day_name = f'{time_period[0].day:02d}-{time_period[0].month:02d}_to_{time_period[1].day:02d}-{time_period[1].month:02d}'
-        self.dataset_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._day_name}_time_period.csv"
-        self.cleaned_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._day_name}_clean.csv"
-        self.preprocessed_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_{self._day_name}_trips.csv"
+        self.dataset_path = f"./data/preprocessed/DCAIS_{self._vt}_{self._day_name}_time_period.csv"
+        self.cleaned_path = f"./data/preprocessed/DCAIS_{self._vt}_{self._day_name}_clean.csv"
+        self.preprocessed_path = f"./data/preprocessed/DCAIS_{self._vt}_{self._nsamples}-mmsi_{self._day_name}_trips.csv"
         if self.region is not None:
-            self.preprocessed_path = f"./data/preprocessed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_{self._day_name}_trips.csv"
+            self.preprocessed_path = f"./data/preprocessed/DCAIS_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_{self._day_name}_trips.csv"
 
         self.compress_path = None
         self.compress_rate_path = None
@@ -293,13 +293,13 @@ class Trajectories:
     def compress_trips(self, compress='DP', alpha=1):
         dataset_dict = self.get_dataset()
 
-        self.compress_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_trips.csv"
-        self.compress_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_compress_rate.p"
-        self.time_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_{self._day_name}_compress_time.p"
+        self.compress_path = f"./data/preprocessed/compressed/DCAIS_{self._vt}_{self._nsamples}_{compress}_{alpha}_{self._day_name}_trips.csv"
+        self.compress_rate_path = f"./data/preprocessed/compressed/DCAIS_{self._vt}_{self._nsamples}_{compress}_{alpha}_{self._day_name}_compress_rate.p"
+        self.time_rate_path = f"./data/preprocessed/compressed/DCAIS_{self._vt}_{self._nsamples}_{compress}_{alpha}_{self._day_name}_compress_time.p"
         if self.region is not None:
-            self.compress_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_region_{self.region}_{self._day_name}_trips.csv"
-            self.compress_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_region_{self.region}_{self._day_name}_compress_rate.p"
-            self.time_rate_path = f"./data/preprocessed/compressed/DCAIS_vessels_{self._vt}_{self._nsamples}-mmsi_compress_{compress}_{alpha}_region_{self.region}_{self._day_name}_compress_time.p"
+            self.compress_path = f"./data/preprocessed/compressed/DCAIS_{self._vt}_{self._nsamples}_{compress}_{alpha}_region_{self.region}_{self._day_name}_trips.csv"
+            self.compress_rate_path = f"./data/preprocessed/compressed/DCAIS_{self._vt}_{self._nsamples}_{compress}_{alpha}_region_{self.region}_{self._day_name}_compress_rate.p"
+            self.time_rate_path = f"./data/preprocessed/compressed/DCAIS_{self._vt}_{self._nsamples}_{compress}_{alpha}_region_{self.region}_{self._day_name}_compress_time.p"
         if not os.path.exists(self.compress_path):
             if not os.path.exists(f"./data/preprocessed/compressed/"):
                 os.makedirs(f"./data/preprocessed/compressed/")
