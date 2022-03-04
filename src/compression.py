@@ -17,13 +17,12 @@ def calc_SED(pA, pI, pB):
     pI_lat, pI_lon, pI_time = pI
     pB_lat, pB_lon, pB_time = pB
 
-
     middle_dist = pI_time - pA_time
     total_dist = pB_time - pA_time
     if total_dist == 0:
         time_ratio = 0
     else:
-        time_ratio = middle_dist/total_dist
+        time_ratio = middle_dist / total_dist
 
     lat = pA_lat + (pB_lat - pA_lat) * time_ratio
     lon = pA_lon + (pB_lon - pA_lon) * time_ratio
@@ -46,9 +45,10 @@ def calc_DP(pA, pI, pB):
     pI_lat, pI_lon, pI_time = pI
     pB_lat, pB_lon, pB_time = pB
 
-    A = pB_lon - pA_lon
-    B = pA_lat - pB_lat
-    C = pB_lat * pA_lat - pA_lat * pB_lon
+    # equation: (yA−yB)x−(xA−xB)y+xAyB−xByA=0.
+    A = pA_lon - pB_lon
+    B = - (pA_lat - pB_lat)
+    C = pA_lat * pB_lon - pB_lat * pA_lon
 
     if A == 0 and B == 0:
         shortDist = 0
@@ -70,16 +70,16 @@ def calc_AVS(pA, pI, pB):
     pI_lat, pI_lon, pI_time = pI
     pB_lat, pB_lon, pB_time = pB
 
-    d1 = np.sqrt((pI_lat - pA_lat)*(pI_lat - pA_lat) + (pI_lon - pA_lon)*(pI_lon - pA_lon))
-    d2 = np.sqrt((pB_lat - pI_lat)*(pB_lat - pI_lat) + (pB_lon - pI_lon)*(pB_lon - pI_lon))
+    d1 = np.sqrt((pI_lat - pA_lat) * (pI_lat - pA_lat) + (pI_lon - pA_lon) * (pI_lon - pA_lon))
+    d2 = np.sqrt((pB_lat - pI_lat) * (pB_lat - pI_lat) + (pB_lon - pI_lon) * (pB_lon - pI_lon))
 
     v1 = 0
     v2 = 0
-    if (pI_time-pA_time) > 0:
-        v1 = d1/(pI_time-pA_time)
+    if (pI_time - pA_time) > 0:
+        v1 = d1 / (pI_time - pA_time)
     if (pB_time - pI_time) > 0:
-        v2 = d2/(pB_time-pI_time)
-    AVS = abs(v2-v1)
+        v2 = d2 / (pB_time - pI_time)
+    AVS = abs(v2 - v1)
 
     return AVS
 
@@ -138,6 +138,7 @@ def calc_TR_SP(trajectory, dim_set, traj_time, epsilon, epsilon2, calc_func, cal
 
     return new_trajectory
 
+
 def traj_max_dists(trajectory, traj_time, calc_func):
     """
     It computes the selected distance for all points in between
@@ -152,7 +153,7 @@ def traj_max_dists(trajectory, traj_time, calc_func):
     # start and final points
     start_location = (trajectory['lat'][0], trajectory['lon'][0], traj_time[0])
     final_location = (trajectory['lat'][-1], trajectory['lon'][-1], traj_time[-1])
-    for i in range(1, (traj_len-1)):
+    for i in range(1, (traj_len - 1)):
         # middle point at index i
         middle = (trajectory['lat'][i], trajectory['lon'][i], traj_time[i])
         # compute the distance
@@ -252,24 +253,26 @@ def compression(dataset, metric='TR', verbose=True, alpha=1):
             if metric in ['TR_SP']:
                 max_epsilon, idx, epsilon = traj_max_dists(curr_traj, traj_time, calc_SED)
                 max_epsilon2, idx2, epsilon2 = traj_max_dists(curr_traj, traj_time, calc_AVS)
-                compress_traj = calc_func(curr_traj, dim_set, traj_time, epsilon * alpha, epsilon2 * alpha, calc_SED, calc_AVS)
+                compress_traj = calc_func(curr_traj, dim_set, traj_time, epsilon * alpha, epsilon2 * alpha, calc_SED,
+                                          calc_AVS)
             elif metric in ['SP_TR']:
                 max_epsilon, idx, epsilon = traj_max_dists(curr_traj, traj_time, calc_AVS)
                 max_epsilon2, idx2, epsilon2 = traj_max_dists(curr_traj, traj_time, calc_SED)
-                compress_traj = calc_func(curr_traj, dim_set, traj_time, epsilon * alpha, epsilon2 * alpha, calc_AVS, calc_SED)
+                compress_traj = calc_func(curr_traj, dim_set, traj_time, epsilon * alpha, epsilon2 * alpha, calc_AVS,
+                                          calc_SED)
             else:
                 max_epsilon, idx, epsilon = traj_max_dists(curr_traj, traj_time, calc_func)
-                compress_traj = traj_compression(curr_traj, dim_set, traj_time, calc_func, epsilon*alpha)
+                compress_traj = traj_compression(curr_traj, dim_set, traj_time, calc_func, epsilon * alpha)
         except:
-            print(f"\t\tIt was not possible to compress this trajectory {mmsis[id_mmsi]} of length {len(curr_traj['lat'])}.")
+            print(
+                f"\t\tIt was not possible to compress this trajectory {mmsis[id_mmsi]} of length {len(curr_traj['lat'])}.")
 
         compress_traj['time'] = compress_traj['time'].astype('datetime64[s]')
         new_dataset[mmsis[id_mmsi]] = compress_traj
         t1 = time.time_ns() - t0
         # if verbose:
         #     print(f"\tlength before: {len(curr_traj['lat'])}, length now: {len(compress_traj['lat'])}, reduction of {1 - len(compress_traj['lat'])/len(curr_traj['lat'])}")
-        compression_rate = np.append(compression_rate, 1 - (len(compress_traj['lat'])/len(curr_traj['lat'])))
+        compression_rate = np.append(compression_rate, 1 - (len(compress_traj['lat']) / len(curr_traj['lat'])))
         processing_time = np.append(processing_time, t1)
 
     return new_dataset, compression_rate, processing_time
-

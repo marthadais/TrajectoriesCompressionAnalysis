@@ -8,6 +8,27 @@ from src.distances import compute_distance_matrix
 from src.clustering import Clustering
 from sklearn import metrics
 
+def lines_ca_score(folder, score, options, col):
+    # figure of the clustering purity
+    ca = 'dbscan'
+    eps = 0.02
+    fig = plt.figure(figsize=(10, 7))
+    i = 0
+    for compress_opt in options:
+        x = pd.read_csv(f'{folder}/clustering_{ca}_{eps}_{compress_opt}_{score}.csv', index_col=0)
+        x.index = x.index.astype(str)
+        plt.plot(x, color=col[i], marker="o", linestyle="-",
+                 linewidth=3, markersize=10, label=compress_opt)
+        i = i + 1
+    plt.ylabel(f'{score} score', fontsize=15)
+    plt.xlabel('Factors', fontsize=15)
+    plt.legend(fontsize=15)
+    plt.xticks(range(len(x)), x.index, fontsize=15, rotation=45)
+    plt.yticks(fontsize=15)
+    plt.tight_layout()
+    plt.savefig(f'{folder}/lines-clustering-{score}.png', bbox_inches='tight')
+    plt.close()
+
 
 def lines_compression(folder):
     options = ['DP', 'TR', 'SP', 'TR_SP', 'SP_TR']
@@ -159,24 +180,14 @@ def lines_compression(folder):
     plt.close()
 
     # figure of the clustering purity
-    ca = 'dbscan'
-    eps = 0.02
-    fig = plt.figure(figsize=(10, 7))
-    i = 0
-    for compress_opt in options:
-        purity = pd.read_csv(f'{folder}/clustering_{ca}_{eps}_{compress_opt}_purity.csv', index_col=0)
-        purity.index = purity.index.astype(str)
-        plt.plot(purity, color=col[i], marker="o", linestyle="-",
-                 linewidth=3, markersize=10, label=compress_opt)
-        i = i + 1
-    plt.ylabel('Purity score', fontsize=15)
-    plt.xlabel('Factors', fontsize=15)
-    plt.legend(fontsize=15)
-    plt.xticks(range(len(purity)), purity.index, fontsize=15, rotation=45)
-    plt.yticks(fontsize=15)
-    plt.tight_layout()
-    plt.savefig(f'{folder}/lines-clustering-purity.png', bbox_inches='tight')
-    plt.close()
+    lines_ca_score(folder, 'purity', options, col)
+    lines_ca_score(folder, 'coverage', options, col)
+    lines_ca_score(folder, 'mh', options, col)
+    lines_ca_score(folder, 'nmi', options, col)
+    lines_ca_score(folder, 'ri', options, col)
+    lines_ca_score(folder, 'mi', options, col)
+    lines_ca_score(folder, 'ami', options, col)
+    lines_ca_score(folder, 'ari', options, col)
 
     # figure of the spearman
     fig = plt.figure(figsize=(10, 7))
@@ -306,7 +317,7 @@ def get_time_dtw(path):
     return up
 
 
-def factor_dist_analysis(dataset, compress_opt, folder, ncores=4):
+def factor_dist_analysis(dataset, compress_opt, folder, ncores=4, metric='dtw'):
     factors = [2, 1.5, 1, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128]
     times = pd.DataFrame()
     # comparing distances
@@ -314,7 +325,7 @@ def factor_dist_analysis(dataset, compress_opt, folder, ncores=4):
     features_folder = f'{folder}/NO/'
     if not os.path.exists(features_folder):
         os.makedirs(features_folder)
-    features_path, main_time = compute_distance_matrix(dataset.get_dataset(), features_folder, verbose=True, njobs=ncores, metric='dtw')
+    features_path, main_time = compute_distance_matrix(dataset.get_dataset(), features_folder, verbose=True, njobs=ncores, metric=metric)
 
     dtw_raw = pickle.load(open(features_path, 'rb'))
     dtw_raw_time = get_time_dtw(main_time)
@@ -327,7 +338,7 @@ def factor_dist_analysis(dataset, compress_opt, folder, ncores=4):
         print({features_folder})
         # DTW distances
         features_path, feature_time = compute_distance_matrix(comp_dataset, features_folder, verbose=True,
-                                                                   njobs=ncores, metric='dtw')
+                                                                   njobs=ncores, metric=metric)
         dtw_factor = pickle.load(open(features_path, 'rb'))
         measures[i] = {}
         measures[i]['spearman-pvalue'], measures[i]['spearman-corr'] = permutation(dtw_raw, dtw_factor)
@@ -338,10 +349,10 @@ def factor_dist_analysis(dataset, compress_opt, folder, ncores=4):
 
     measures = pd.DataFrame(measures)
     measures.columns = [str(i) for i in factors]
-    measures.to_csv(f'{folder}/measures_dtw_{compress_opt}_times.csv')
+    measures.to_csv(f'{folder}/measures_{metric}_{compress_opt}_times.csv')
 
     times.columns = ['no'] + [str(i) for i in factors]
-    times.to_csv(f'{folder}/dtw_{compress_opt}_times.csv', index=False)
+    times.to_csv(f'{folder}/{metric}_{compress_opt}_times.csv', index=False)
 
     fig = plt.figure(figsize=(10, 5))
     times.boxplot()
@@ -350,7 +361,7 @@ def factor_dist_analysis(dataset, compress_opt, folder, ncores=4):
     plt.xticks(range(times.shape[1]), times.columns, fontsize=15, rotation=45)
     plt.yticks(fontsize=15)
     plt.tight_layout()
-    plt.savefig(f'{folder}/boxplot-dtw-{compress_opt}-times.png', bbox_inches='tight')
+    plt.savefig(f'{folder}/boxplot-{metric}-{compress_opt}-times.png', bbox_inches='tight')
     plt.close()
 
     return measures
@@ -363,16 +374,23 @@ def purity_score(y_true, y_pred):
     return np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
 
 
-def factor_cluster_analysis(dataset, compress_opt, folder, ncores=4, ca='dbscan', eps=0.02):
+def factor_cluster_analysis(dataset, compress_opt, folder, ncores=4, ca='dbscan', eps=0.02, metric='dtw'):
     factors = [2, 1.5, 1, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128]
     measures_purity = {}
+    measures_coverage = {}
+    measures_mh = {}
+    measures_mni = {}
+    measures_ri = {}
+    measures_mi = {}
+    measures_ami = {}
+    measures_ari = {}
     times = pd.DataFrame()
     times_cl = {}
     # comparing distances
     features_folder = f'{folder}/NO/'
     if not os.path.exists(features_folder):
         os.makedirs(features_folder)
-    features_path, main_time = compute_distance_matrix(dataset.get_dataset(), features_folder, verbose=True, njobs=ncores, metric='dtw')
+    features_path, main_time = compute_distance_matrix(dataset.get_dataset(), features_folder, verbose=True, njobs=ncores, metric=metric)
     main_time = get_time_dtw(main_time)
     times = pd.concat([times, pd.DataFrame(main_time)], axis=1)
     #clustering
@@ -388,20 +406,48 @@ def factor_cluster_analysis(dataset, compress_opt, folder, ncores=4, ca='dbscan'
         print({features_folder})
         # DTW distances
         features_path, feature_time = compute_distance_matrix(comp_dataset, features_folder, verbose=True,
-                                                                   njobs=ncores, metric='dtw')
+                                                                   njobs=ncores, metric=metric)
         # clustering
         model = Clustering(ais_data_path=dataset.preprocessed_path, distance_matrix_path=features_path,
                                       cluster_algorithm=ca, folder=features_folder, norm_dist=True, eps=eps)
         times_cl[str(i)] = model.time_elapsed
         labels_factor = model.labels
         measures_purity[str(i)] = purity_score(labels_raw, labels_factor)
+        measures_coverage[str(i)] = purity_score(labels_factor, labels_raw)
+        measures_mh[str(i)] = 2/(1/measures_purity[str(i)] + 1/measures_coverage[str(i)])
+        measures_mni[str(i)] = metrics.normalized_mutual_info_score(labels_raw, labels_factor)
+        measures_ri[str(i)] = metrics.rand_score(labels_raw, labels_factor)
+        measures_mi[str(i)] = metrics.mutual_info_score(labels_raw, labels_factor)
+        measures_ami[str(i)] = metrics.adjusted_mutual_info_score(labels_raw, labels_factor)
+        measures_ari[str(i)] = metrics.adjusted_rand_score(labels_raw, labels_factor)
         print(f'Purity with factor {i}: {measures_purity[str(i)]}')
+        print(f'Coverage with factor {i}: {measures_coverage[str(i)]}')
+        print(f'MH with factor {i}: {measures_mh[str(i)]}')
+        print(f'NMI with factor {i}: {measures_mni[str(i)]}')
+        print(f'Rand_index with factor {i}: {measures_ri[str(i)]}')
+        print(f'MI with factor {i}: {measures_mi[str(i)]}')
+        print(f'AMI with factor {i}: {measures_ami[str(i)]}')
+        print(f'ARI with factor {i}: {measures_ari[str(i)]}')
 
         # dtw_factor_time = get_time_dtw(feature_time)
         # times = pd.concat([times, pd.DataFrame(dtw_factor_time)], axis=1)
 
     measures_purity = pd.Series(measures_purity)
     measures_purity.to_csv(f'{folder}/clustering_{ca}_{eps}_{compress_opt}_purity.csv')
+    measures_coverage = pd.Series(measures_coverage)
+    measures_coverage.to_csv(f'{folder}/clustering_{ca}_{eps}_{compress_opt}_coverage.csv')
+    measures_mh = pd.Series(measures_mh)
+    measures_mh.to_csv(f'{folder}/clustering_{ca}_{eps}_{compress_opt}_mh.csv')
+    measures_mni = pd.Series(measures_mni)
+    measures_mni.to_csv(f'{folder}/clustering_{ca}_{eps}_{compress_opt}_nmi.csv')
+    measures_ri = pd.Series(measures_ri)
+    measures_ri.to_csv(f'{folder}/clustering_{ca}_{eps}_{compress_opt}_ri.csv')
+    measures_ari = pd.Series(measures_ari)
+    measures_ari.to_csv(f'{folder}/clustering_{ca}_{eps}_{compress_opt}_ari.csv')
+    measures_mi = pd.Series(measures_mi)
+    measures_mi.to_csv(f'{folder}/clustering_{ca}_{eps}_{compress_opt}_mi.csv')
+    measures_ami = pd.Series(measures_ami)
+    measures_ami.to_csv(f'{folder}/clustering_{ca}_{eps}_{compress_opt}_ami.csv')
 
     times_cl = pd.Series(times_cl) * 1e-9
     # times_cl = times.sum(axis=0) + times_cl

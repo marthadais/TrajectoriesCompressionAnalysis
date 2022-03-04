@@ -9,13 +9,13 @@ print('Starting')
 n_samples = None
 # https://coast.noaa.gov/data/marinecadastre/ais/VesselTypeCodes2018.pdf
 #FISHING
-# vessel_type = [30, 1001, 1002]
+vessel_type = [30, 1001, 1002]
 #CARGO:
 # vessel_type = list(range(70, 80)) + [1003, 1004, 1016]
 #PASSANGER:
 # vessel_type = list(range(60, 70)) + [1012, 1013, 1014, 1015]
 #TUG TOW:
-vessel_type = [21, 22, 31, 32, 52, 1023, 1025]
+# vessel_type = [21, 22, 31, 32, 52, 1023, 1025]
 #TANKER:
 # vessel_type = list(range(80, 90)) + [1017, 1024]
 #MILITARY:
@@ -36,33 +36,35 @@ region_limits = [33, 34, -119.5, -117]
 dataset = Trajectories(n_samples=n_samples, vessel_type=vessel_type, time_period=(start_day, end_day),
                        region=region_limits)
 
-folder = f'./results/DCAIS/type_{vessel_type}/period_{start_day.date()}_to_{end_day.date()}/dtw/'
-# folder = f'./results/{dataset_name}/type_{vessel_type}/period_{start_day.date()}_to_{end_day.date()}/{metric}_fast/'
+metric = 'dtw'
+folder = f'./results/DCAIS/type_{vessel_type}/period_{start_day.date()}_to_{end_day.date()}/{metric}/'
 if region_limits is not None:
-    folder = f'./results/DCAIS/type_{vessel_type}/period_{start_day.date()}_to_{end_day.date()}/{n_samples}_{region_limits}/dtw_fast/'
+    folder = f'./results/DCAIS/vt_{vessel_type}/date_{start_day.date()}_to_{end_day.date()}/{region_limits}/{metric}/'
 
 if not os.path.exists(folder):
     os.makedirs(folder)
 
-rates1, times1 = analysis.factor_analysis(dataset, 'DP', folder)
-measure = analysis.factor_dist_analysis(dataset, 'DP', folder)
-measure_purity = analysis.factor_cluster_analysis(dataset, 'DP', folder)
+print(folder)
 
-rates2, times2 = analysis.factor_analysis(dataset, 'TR', folder)
-measure_rt = analysis.factor_dist_analysis(dataset, 'TR', folder)
-measure_purity_tr = analysis.factor_cluster_analysis(dataset, 'TR', folder)
+# rates1, times1 = analysis.factor_analysis(dataset, 'DP', folder)
+# measure = analysis.factor_dist_analysis(dataset, 'DP', folder, metric=metric)
+measure_purity = analysis.factor_cluster_analysis(dataset, 'DP', folder, metric=metric)
 
-rates3, times3 = analysis.factor_analysis(dataset, 'SP', folder)
-measure_sp = analysis.factor_dist_analysis(dataset, 'SP', folder)
-measure_purity_sp = analysis.factor_cluster_analysis(dataset, 'SP', folder)
+# rates2, times2 = analysis.factor_analysis(dataset, 'TR', folder)
+# measure_rt = analysis.factor_dist_analysis(dataset, 'TR', folder, metric=metric)
+measure_purity_tr = analysis.factor_cluster_analysis(dataset, 'TR', folder, metric=metric)
 
-rates4, times4 = analysis.factor_analysis(dataset, 'TR_SP', folder)
-measure_tr_sp = analysis.factor_dist_analysis(dataset, 'TR_SP', folder)
-measure_purity_tr_sp = analysis.factor_cluster_analysis(dataset, 'TR_SP', folder)
+# rates3, times3 = analysis.factor_analysis(dataset, 'SP', folder)
+# measure_sp = analysis.factor_dist_analysis(dataset, 'SP', folder, metric=metric)
+measure_purity_sp = analysis.factor_cluster_analysis(dataset, 'SP', folder, metric=metric)
 
-rates5, times5 = analysis.factor_analysis(dataset, 'SP_TR', folder)
-measure_sp_tr = analysis.factor_dist_analysis(dataset, 'SP_TR', folder)
-measure_purity_sp_tr = analysis.factor_cluster_analysis(dataset, 'SP_TR', folder)
+# rates4, times4 = analysis.factor_analysis(dataset, 'TR_SP', folder)
+# measure_tr_sp = analysis.factor_dist_analysis(dataset, 'TR_SP', folder, metric=metric)
+measure_purity_tr_sp = analysis.factor_cluster_analysis(dataset, 'TR_SP', folder, metric=metric)
+
+# rates5, times5 = analysis.factor_analysis(dataset, 'SP_TR', folder)
+# measure_sp_tr = analysis.factor_dist_analysis(dataset, 'SP_TR', folder, metric=metric)
+measure_purity_sp_tr = analysis.factor_cluster_analysis(dataset, 'SP_TR', folder, metric=metric)
 
 analysis.lines_compression(folder)
 

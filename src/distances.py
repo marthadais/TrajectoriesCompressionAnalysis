@@ -57,24 +57,19 @@ def MD(a, b):
 
     j = 0
     for i in range(1, m):
-        # A[i, j] = min(A[i - 1, j] + a_dist[i - 1], B[i - 1, j] + ab_dist[i, j])
         A[i, j] = min(A[i - 1, j] + a_dist[i - 1], B[i - 1, j] + haversine(a[i], b[j]))
     i = 0
     for j in range(1, n):
-        # B[i, j] = min(A[i, j - 1] + ab_dist[i, j], B[i, j - 1] + b_dist[j - 1])
         B[i, j] = min(A[i, j - 1] + haversine(b[j], a[i]), B[i, j - 1] + b_dist[j - 1])
 
     # computing distances
     for i, j in product(range(1, m), range(1, n)):
-        # A[i, j] = min(A[i-1, j] + a_dist[i-1], B[i-1, j] + ab_dist[i, j])
         A[i, j] = min(A[i-1, j] + a_dist[i-1], B[i-1, j] + haversine(a[i], b[j]))
-        # B[i, j] = min(A[i, j-1] + ab_dist[i, j], B[i, j-1] + b_dist[j-1])
         B[i, j] = min(A[i, j-1] + haversine(b[j], a[i]), B[i, j-1] + b_dist[j-1])
 
     # getting the merge distance
     md_dist = min(A[-1, -1], B[-1, -1])
     if md_dist != 0:
-        # md_dist = (2*md_dist) / (A[-1,-1] + B[-1,-1])
         md_dist = ((2*md_dist) / (np.sum(a_dist)+np.sum(b_dist)))-1
     return md_dist
 
@@ -96,7 +91,7 @@ def _dist_func(dataset, metric, mmsis, dim_set, id_b, id_a, s_a, dist_matrix, pr
 
 
 def compute_distance_matrix(dataset, path, verbose=True, njobs=3, metric='dtw'):
-    if not os.path.exists(f'{path}/features_distance.p'):
+    if not os.path.exists(f'{path}/distances.p'):
         _dim_set = ['lat', 'lon']
         _mmsis = list(dataset.keys())
 
@@ -122,10 +117,10 @@ def compute_distance_matrix(dataset, path, verbose=True, njobs=3, metric='dtw'):
 
         # saving features
         os.makedirs(path, exist_ok=True)
-        pickle.dump(dm, open(f'{path}/features_distance.p', 'wb'))
-        pickle.dump(process_time, open(f'{path}/distances_process_time.p', 'wb'))
+        pickle.dump(dm, open(f'{path}/distances.p', 'wb'))
+        pickle.dump(process_time, open(f'{path}/distances_time.p', 'wb'))
     # else:
         # print('\tDistances already computed.')
-    dm_path = f'{path}/features_distance.p'
-    process_time_path = f'{path}/distances_process_time.p'
+    dm_path = f'{path}/distances.p'
+    process_time_path = f'{path}/distances_time.p'
     return dm_path, process_time_path
