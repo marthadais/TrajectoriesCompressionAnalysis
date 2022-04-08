@@ -109,6 +109,7 @@ def create_dataset_noaa(path, time_period, vt=None):
             # chunk2 = chunk[chunk['VesselType'] == vt]
             chunk2 = chunk[chunk['VesselType'].isin(vt)]
             mmsis = np.concatenate((mmsis, chunk2['MMSI'].unique()))
+            mmsis = mmsis.astype(float)
             mmsis = np.unique(mmsis)
             chunk = chunk[chunk['MMSI'].isin(mmsis)]
         dataset = pd.concat([dataset, chunk], ignore_index=True)
@@ -241,10 +242,14 @@ class Trajectories:
 
             # if is inside the selected region and contains enough observations
             if isin_region:
+                crop=True
                 # observations that is in the region
-                trajectory_crop = trajectory[
-                    (trajectory['lon'] >= self.region[2]) & (trajectory['lon'] <= self.region[3]) & (
-                            trajectory['lat'] >= self.region[0]) & (trajectory['lat'] <= self.region[1])]
+                if crop==True:
+                    trajectory_crop = trajectory[
+                        (trajectory['lon'] >= self.region[2]) & (trajectory['lon'] <= self.region[3]) & (
+                                trajectory['lat'] >= self.region[0]) & (trajectory['lat'] <= self.region[1])]
+                else:
+                    trajectory_crop = trajectory
                 # include trajectory id
                 aux_col = pd.DataFrame({'trajectory': np.repeat(count_traj, trajectory_crop.shape[0])})
                 trajectory_crop.reset_index(drop=True, inplace=True)

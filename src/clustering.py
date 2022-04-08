@@ -4,27 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import time
-
-
-def my_DBSCAN(data, **args):
-    """
-    It generates the DBSCAN clustering
-    :param data: the distance matrix
-    :return: the clustering results
-    """
-    min_samples = 2
-    if 'min_samples' in args.keys():
-        min_samples = args['min_samples']
-
-    eps = 3
-    if 'eps' in args.keys():
-        eps = args['eps']
-
-    clustering = DBSCAN(eps=eps, min_samples=min_samples, metric='precomputed')
-    clustering.fit(data)
-
-    return clustering
-
+import hdbscan
 
 class Clustering:
     def __init__(self, ais_data_path, distance_matrix_path, folder, verbose=True, **args):
@@ -45,21 +25,22 @@ class Clustering:
         if 'eps' in args.keys():
             self.eps = args['eps']
 
-        self._min_samples = 3
+        self._min_samples = 2
         if 'min_samples' in args.keys():
             self._min_samples = args['min_samples']
 
+        self.dm[np.isinf(self.dm)] = self.dm[~np.isinf(self.dm)].max() + 1
         if 'norm_dist' in args.keys():
             if args['norm_dist']:
                 self.dm = self.dm/self.dm.max()
 
         # saving features
-        self.path = f'{folder}/dbscan'
+        self.path = f'{folder}/hdbscan'
         if not os.path.exists(self.path):
             os.makedirs(self.path)
-        self.results_file_path = f'{self.path}/dbscan_{self.eps}.csv'
-        self.labels_file_path = f'{self.path}/labels_dbscan_{self.eps}.csv'
-        self.time_path = f'{self.path}/time_dbscan_{self.eps}.csv'
+        self.results_file_path = f'{self.path}/hdbscan_{self._min_samples}.csv'
+        self.labels_file_path = f'{self.path}/labels_hdbscan_{self._min_samples}.csv'
+        self.time_path = f'{self.path}/time_hdbscan_{self._min_samples}.csv'
 
         if not os.path.exists(self.results_file_path):
             t0 = time.time_ns()
@@ -76,12 +57,17 @@ class Clustering:
         It computes the clustering algorithm selected.
         """
         if self._verbose:
-            print(f'Clustering data using DBSCAN')
-        if self.eps is None:
-            self._estimating_epsilon()
+            print(f'Clustering data using HDBSCAN')
+        # if self.eps is None:
+        #     self._estimating_epsilon()
 
-        self._model = my_DBSCAN(self.dm, metric='precomputed', eps=self.eps, min_samples=self._min_samples)
-        self.labels = self._model.labels_
+        # self._model = DBSCAN(eps=self.eps, min_samples=self._min_samples, metric='precomputed')
+        # self._model.fit(self.dm)
+        # self.labels = self._model.labels_
+
+        self._model = hdbscan.HDBSCAN(min_cluster_size=self._min_samples, min_samples=1, metric='precomputed')
+        self.labels = self._model.fit_predict(self.dm)
+
         self._agg_cluster_labels()
 
     def _estimating_epsilon(self):
@@ -116,18 +102,12 @@ class Clustering:
         It includes the label information provided by the Clustering algorithm into the dataset.
         """
         data = pd.read_csv(self.ais_data_path)
-
         labels = pd.DataFrame([self.labels], columns=data['trajectory'].unique()).to_dict('records')[0]
         aux = data['trajectory']
         aux = aux.map(labels)
         aux.name = 'Clusters'
         cluster_dataset = pd.concat([data, aux], axis=1)
-
         labels_mmsi = cluster_dataset[['mmsi', 'trajectory', 'Clusters']].drop_duplicates()
-
-        aux_data = cluster_dataset[['trajectory']].copy()
-        aux_data.drop_duplicates(['trajectory'], inplace=True)
-
         cluster_dataset.to_csv(self.results_file_path)
         labels_mmsi.to_csv(self.labels_file_path)
 
