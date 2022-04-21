@@ -45,7 +45,7 @@ region_limits = [37.6, 39, -122.9, -122.2]
 # Creating dataset
 dataset = Trajectories(n_samples=n_samples, vessel_type=vessel_type, time_period=(start_day, end_day),
                        region=region_limits)
-metric = 'DTW'
+metric = 'dtw'
 
 folder = f'./results/DCAIS/type_{vessel_type}/period_{start_day.date()}_to_{end_day.date()}/{metric}/'
 if region_limits is not None:

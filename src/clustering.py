@@ -42,15 +42,15 @@ class Clustering:
         self.labels_file_path = f'{self.path}/labels_hdbscan_{self._min_samples}.csv'
         self.time_path = f'{self.path}/time_hdbscan_{self._min_samples}.csv'
 
-        if not os.path.exists(self.results_file_path):
-            t0 = time.time_ns()
-            self.computer_clustering()
-            t1 = time.time_ns() - t0
-            self.time_elapsed = t1
-            pickle.dump(self.time_elapsed, open(self.time_path, 'wb'))
-        else:
-            self.time_elapsed = pickle.load(open(self.time_path, 'rb'))
-            self.labels = pd.read_csv(self.labels_file_path).Clusters
+        # if not os.path.exists(self.results_file_path):
+        t0 = time.time_ns()
+        self.computer_clustering()
+        t1 = time.time_ns() - t0
+        self.time_elapsed = t1
+        pickle.dump(self.time_elapsed, open(self.time_path, 'wb'))
+        # else:
+        #     self.time_elapsed = pickle.load(open(self.time_path, 'rb'))
+        #     self.labels = pd.read_csv(self.labels_file_path).Clusters
 
     def computer_clustering(self):
         """
@@ -64,8 +64,8 @@ class Clustering:
         # self._model = DBSCAN(eps=self.eps, min_samples=self._min_samples, metric='precomputed')
         # self._model.fit(self.dm)
         # self.labels = self._model.labels_
-
-        self._model = hdbscan.HDBSCAN(min_cluster_size=self._min_samples, min_samples=1, metric='precomputed')
+        #
+        self._model = hdbscan.HDBSCAN(min_cluster_size=7, min_samples=3, metric='precomputed')
         self.labels = self._model.fit_predict(self.dm)
 
         self._agg_cluster_labels()
