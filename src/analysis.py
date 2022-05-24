@@ -7,41 +7,49 @@ from src.distances import compute_distance_matrix
 from src.clustering import Clustering
 from sklearn import metrics
 import mantel
+from matplotlib import rc
 
-def lines_ca_score(folder, score, options, col, eps=0.02):
-    comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
+
+def lines_ca_score(folder, score, options, col, lines_style, mark_size, line_size, eps=0.02):
+    # comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
+    comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR', 'DP_SP': 'DP+SB',
+                'SP_DP': 'SB+DP', 'TR_DP': 'TR+DP', 'DP_TR': 'DP+TR'}
     # figure of the clustering purity
     ca = 'dbscan'
-    fig = plt.figure(figsize=(10, 7))
+    fig = plt.figure(figsize=(10, 8))
     i = 0
     for compress_opt in options:
         x = pd.read_csv(f'{folder}/clustering_{ca}_{eps}_{compress_opt}_{score}.csv', index_col=0)
         x.index = x.index.astype(str)
-        plt.plot(x, color=col[i], marker="p", linestyle="-",
-                 linewidth=2, markersize=7, label=comp_lbl[compress_opt])
+        plt.plot(x, color=col[i], marker="p", linestyle=lines_style[i],
+                 linewidth=line_size[i], markersize=mark_size[i], label=comp_lbl[compress_opt])
         i = i + 1
-    plt.ylabel(f'{score} score', fontsize=20)
-    plt.xlabel('Factors', fontsize=20)
-    plt.legend(fontsize=20)
-    plt.xticks(range(len(x)), x.index, fontsize=20, rotation=45)
+    plt.ylabel(f'{score.upper()}', fontsize=25)
+    plt.xlabel('Factors', fontsize=25)
+    plt.legend(fontsize=18)
+    plt.xticks(range(len(x)), [r'$2$', r'$1.5$', r'$1$', r'$\frac{1}{2}$', r'$\frac{1}{4}$', r'$\frac{1}{8}$',
+                               r'$\frac{1}{16}$', r'$\frac{1}{32}$', r'$\frac{1}{64}$', r'$\frac{1}{128}$'], fontsize=25)
     plt.yticks(fontsize=20)
     plt.tight_layout()
     plt.savefig(f'{folder}/lines-clustering-{score}.png', bbox_inches='tight')
     plt.close()
 
-def time_mean(folder, item, factors, options, col):
-    comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
-    fig = plt.figure(figsize=(10, 7))
+def time_mean(folder, item, factors, options, col, lines_style, mark_size, line_size):
+    # comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
+    comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR', 'DP_SP': 'DP+SB',
+                'SP_DP': 'SB+DP', 'TR_DP': 'TR+DP', 'DP_TR': 'DP+TR'}
+    fig = plt.figure(figsize=(10, 8))
     i=0
     for compress_opt in options:
         x = pd.read_csv(f'{folder}/{compress_opt}-compression_{item}.csv')
-        plt.plot(range(len(x.mean(axis=0))), x.mean(axis=0), color=col[i], marker="p", linestyle="-", linewidth=2,
-        markersize=7, label=comp_lbl[compress_opt])
+        plt.plot(range(len(x.mean(axis=0))), x.mean(axis=0), color=col[i], marker="p", linestyle=lines_style[i], linewidth=line_size[i],
+        markersize=mark_size[i], label=comp_lbl[compress_opt])
         i = i+1
-    plt.ylabel(f'Average of Compression {item}',fontsize=20)
-    plt.xlabel('Factors',fontsize=20)
-    plt.legend(fontsize=20)
-    plt.xticks(range(len(x.mean(axis=0))), [str(i) for i in factors], fontsize=20, rotation=45)
+    plt.ylabel(f'Average of Compression {item}',fontsize=25)
+    plt.xlabel('Factors',fontsize=25)
+    plt.legend(fontsize=18)
+    plt.xticks(range(len(x.mean(axis=0))), [r'$2$', r'$1.5$', r'$1$', r'$\frac{1}{2}$', r'$\frac{1}{4}$', r'$\frac{1}{8}$',
+                               r'$\frac{1}{16}$', r'$\frac{1}{32}$', r'$\frac{1}{64}$', r'$\frac{1}{128}$'], fontsize=25)
     plt.yticks(fontsize=20)
     plt.tight_layout()
     plt.savefig(f'{folder}/lines-compression-{item}.png', bbox_inches='tight')
@@ -49,75 +57,94 @@ def time_mean(folder, item, factors, options, col):
 
 
 def lines_compression(folder, metric='dtw', eps=0.02):
-    options = ['DP', 'TR', 'SP', 'TR_SP', 'SP_TR']
-    comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
-    col = ['black', 'blue', 'green', 'darkorange', 'crimson']
-    # options = ['DP']
+    rc('text', usetex=True)
+    rc('text.latex', preamble=r'\usepackage{cmbright}')
+    rc('font', size=25)
+    rc('legend', fontsize=25)
+    # options = ['DP', 'TR', 'SP', 'TR_SP', 'SP_TR']
+    options = ['DP', 'TR', 'SP', 'TR_SP', 'SP_TR', 'DP_SP', 'SP_DP', 'TR_DP', 'DP_TR']
+    # comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
+    comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR', 'DP_SP': 'DP+SB',
+                'SP_DP': 'SB+DP', 'TR_DP': 'TR+DP', 'DP_TR': 'DP+TR'}
+    # col = ['crimson', 'blue', 'green', 'darkorange', 'black']
+    # col = ['crimson', 'blue', 'green', 'darkorange', 'black', 'violet', 'chocolate', 'blueviolet', 'olive']
+    col = ['tab:red', 'tab:blue', 'tab:green', 'tab:orange', 'black', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:olive']
+    # lines_style = [(0, (3,1,1,1)), 'dotted', 'dashed', 'dashdot', 'solid']
+    lines_style = [(0, (3,1,1,1)), (0, (5, 1)), (0, (3, 5, 1, 5)), 'dotted',
+                   (0, (1, 3)), 'dashdot', (0, (3, 3, 1, 3)), (0, (3, 1, 1, 1, 1, 1)), 'solid']
+    # mark_size = ['11', '9', '7', '5', '3']
+    mark_size = ['11', '11', '11', '9', '9', '6', '6', '3', '3']
+    # line_size = ['3', '2.5', '2', '1.5', '1']
+    line_size = ['3', '3', '3', '2', '2', '1.5', '1.5', '1', '1']
     factors = [2, 1.5, 1, 1 / 2, 1 / 4, 1 / 8, 1 / 16, 1 / 32, 1 / 64, 1 / 128]
+    factors_str = [r'$2$', r'$1.5$', r'$1$', r'$\frac{1}{2}$', r'$\frac{1}{4}$', r'$\frac{1}{8}$',
+                               r'$\frac{1}{16}$', r'$\frac{1}{32}$', r'$\frac{1}{64}$', r'$\frac{1}{128}$']
 
-    time_mean(folder, 'rates', factors, options, col)
-    time_mean(folder, 'times', factors, options, col)
+    time_mean(folder, 'rates', factors, options, col, lines_style, mark_size, line_size)
+    # time_mean(folder, 'times', factors, options, col, lines_style, mark_size, line_size)
 
     # figure of the total time
-    fig = plt.figure(figsize=(10, 7))
+    fig = plt.figure(figsize=(10,8))
     i = 0
     for compress_opt in options:
         times_cl = pd.read_csv(f'{folder}/clustering_{compress_opt}_times.csv', index_col=0)
         times = pd.read_csv(f'{folder}/{metric}_{compress_opt}_times.csv')
+        if times.max().max() > 2e5:
+            times.iloc[:,1:] = times.iloc[:,1:] * 1e-9
         times = (times.sum(axis=0) + times_cl.T).T
         times_compression = pd.read_csv(f'{folder}/{compress_opt}-compression_times.csv')
         times_compression = times_compression * 1e-9
         times[1:] = (times[1:].T + times_compression.sum()).T
-        plt.plot(times, color=col[i], marker="p", linestyle="-",
-                 linewidth=2, markersize=7, label=comp_lbl[compress_opt])
+        plt.plot(times, color=col[i], marker="p", linestyle=lines_style[i],
+                 linewidth=line_size[i], markersize=mark_size[i], label=comp_lbl[compress_opt])
         i = i + 1
-    plt.ylabel('Processing Time (s)', fontsize=20)
-    plt.xlabel('Factors', fontsize=20)
-    plt.legend(fontsize=20)
-    plt.xticks(range(len(times)), times.index, fontsize=20, rotation=45)
+    plt.ylabel('Processing Time (s)', fontsize=25)
+    plt.xlabel('Factors', fontsize=25)
+    plt.legend(fontsize=18)
+    plt.xticks(range(len(times)), [r'Control'] + factors_str, fontsize=25)
     plt.yticks(fontsize=20)
     plt.tight_layout()
     plt.savefig(f'{folder}/lines-total-times.png', bbox_inches='tight')
     plt.close()
 
     # figure of the clustering purity
-    lines_ca_score(folder, 'mh', options, col, eps=eps)
-    lines_ca_score(folder, 'mi', options, col, eps=eps)
-    lines_ca_score(folder, 'nmi', options, col, eps=eps)
-    lines_ca_score(folder, 'ami', options, col, eps=eps)
-    lines_ca_score(folder, 'f1', options, col, eps=eps)
+    lines_ca_score(folder, 'mh', options, col, eps=eps, lines_style=lines_style, mark_size=mark_size, line_size=line_size)
+    lines_ca_score(folder, 'mi', options, col, eps=eps, lines_style=lines_style, mark_size=mark_size, line_size=line_size)
+    lines_ca_score(folder, 'nmi', options, col, eps=eps, lines_style=lines_style, mark_size=mark_size, line_size=line_size)
+    lines_ca_score(folder, 'ami', options, col, eps=eps, lines_style=lines_style, mark_size=mark_size, line_size=line_size)
+    lines_ca_score(folder, 'f1', options, col, eps=eps, lines_style=lines_style, mark_size=mark_size, line_size=line_size)
 
     # figure of the pearson
-    fig = plt.figure(figsize=(10, 7))
+    fig = plt.figure(figsize=(10, 8))
     i = 0
     for compress_opt in options:
         measure = pd.read_csv(f'{folder}/measures_{metric}_{compress_opt}_times.csv', index_col=0)
         measure = measure.loc['mantel-corr']
-        plt.plot(measure, color=col[i], marker="p", linestyle="-",
-                 linewidth=2, markersize=7, label=comp_lbl[compress_opt])
+        plt.plot(measure, color=col[i], marker="p", linestyle=lines_style[i],
+                 linewidth=line_size[i], markersize=mark_size[i], label=comp_lbl[compress_opt])
         i = i + 1
-    plt.ylabel('Mantel Correlation - Pearson', fontsize=20)
-    plt.xlabel('Factors', fontsize=20)
-    plt.legend(fontsize=20)
-    plt.xticks(range(len(measure)), measure.index, fontsize=20, rotation=45)
+    plt.ylabel('Mantel Correlation - Pearson', fontsize=25)
+    plt.xlabel('Factors', fontsize=25)
+    plt.legend(fontsize=18)
+    plt.xticks(range(len(measure)), factors_str, fontsize=25)
     plt.yticks(fontsize=20)
     # plt.tight_layout()
     plt.savefig(f'{folder}/lines-measure-mantel.png', bbox_inches='tight')
     plt.close()
 
     # # figure of the spearman
-    fig = plt.figure(figsize=(10, 7))
+    fig = plt.figure(figsize=(10, 8))
     i = 0
     for compress_opt in options:
         measure = pd.read_csv(f'{folder}/measures_{metric}_{compress_opt}_times.csv', index_col=0)
         measure = measure.loc['mantel-pvalue']
-        plt.plot(measure, color=col[i], marker="p", linestyle="-",
-                 linewidth=2, markersize=7, label=comp_lbl[compress_opt])
+        plt.plot(measure, color=col[i], marker="p", linestyle=lines_style[i],
+                 linewidth=line_size[i], markersize=mark_size[i], label=comp_lbl[compress_opt])
         i = i + 1
-    plt.ylabel('Mantel Test p-value', fontsize=20)
-    plt.xlabel('Factors', fontsize=20)
-    plt.legend(fontsize=20)
-    plt.xticks(range(len(measure)), measure.index, fontsize=20, rotation=45)
+    plt.ylabel('Mantel Test p-value', fontsize=25)
+    plt.xlabel('Factors', fontsize=25)
+    plt.legend(fontsize=18)
+    plt.xticks(range(len(measure)), factors_str, fontsize=25)
     plt.yticks(fontsize=20)
     plt.tight_layout()
     plt.savefig(f'{folder}/lines-measure-mantel-pvalue.png', bbox_inches='tight')

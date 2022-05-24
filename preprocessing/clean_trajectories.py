@@ -180,7 +180,7 @@ class Trajectories:
         self.cleaned_path = f"./data/preprocessed/DCAIS_{self._vt}_{self._day_name}_clean.csv"
         self.preprocessed_path = f"./data/preprocessed/DCAIS_{self._vt}_{self._nsamples}-mmsi_{self._day_name}_trips.csv"
         if self.region is not None:
-            self.preprocessed_path = f"./data/preprocessed/DCAIS_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_{self._day_name}_trips.csv"
+            self.preprocessed_path = f"./data/preprocessed/DCAIS_test_{self._vt}_{self._nsamples}-mmsi_region_{self.region}_{self._day_name}_trips.csv"
 
         self.compress_path = None
         self.compress_rate_path = None

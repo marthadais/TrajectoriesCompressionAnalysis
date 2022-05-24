@@ -223,7 +223,11 @@ def compression(dataset, metric='TR', verbose=True, alpha=1):
                'DP': calc_DP,
                'SP': calc_AVS,
                'TR_SP': calc_TR_SP,
-               'SP_TR': calc_TR_SP}
+               'SP_TR': calc_TR_SP,
+               'SP_DP': calc_TR_SP,
+               'DP_SP': calc_TR_SP,
+               'DP_TR': calc_TR_SP,
+               'TR_DP': calc_TR_SP}
 
     calc_func = metrics[metric]
 
@@ -259,6 +263,26 @@ def compression(dataset, metric='TR', verbose=True, alpha=1):
                 max_epsilon, idx, epsilon = traj_max_dists(curr_traj, traj_time, calc_AVS)
                 max_epsilon2, idx2, epsilon2 = traj_max_dists(curr_traj, traj_time, calc_SED)
                 compress_traj = calc_func(curr_traj, dim_set, traj_time, epsilon * alpha, epsilon2 * alpha, calc_AVS,
+                                          calc_SED)
+            elif metric in ['SP_DP']:
+                max_epsilon, idx, epsilon = traj_max_dists(curr_traj, traj_time, calc_AVS)
+                max_epsilon2, idx2, epsilon2 = traj_max_dists(curr_traj, traj_time, calc_DP)
+                compress_traj = calc_func(curr_traj, dim_set, traj_time, epsilon * alpha, epsilon2 * alpha, calc_AVS,
+                                          calc_DP)
+            elif metric in ['TR_DP']:
+                max_epsilon, idx, epsilon = traj_max_dists(curr_traj, traj_time, calc_SED)
+                max_epsilon2, idx2, epsilon2 = traj_max_dists(curr_traj, traj_time, calc_DP)
+                compress_traj = calc_func(curr_traj, dim_set, traj_time, epsilon * alpha, epsilon2 * alpha, calc_SED,
+                                          calc_DP)
+            elif metric in ['DP_SP']:
+                max_epsilon, idx, epsilon = traj_max_dists(curr_traj, traj_time, calc_DP)
+                max_epsilon2, idx2, epsilon2 = traj_max_dists(curr_traj, traj_time, calc_AVS)
+                compress_traj = calc_func(curr_traj, dim_set, traj_time, epsilon * alpha, epsilon2 * alpha, calc_DP,
+                                          calc_AVS)
+            elif metric in ['DP_TR']:
+                max_epsilon, idx, epsilon = traj_max_dists(curr_traj, traj_time, calc_DP)
+                max_epsilon2, idx2, epsilon2 = traj_max_dists(curr_traj, traj_time, calc_SED)
+                compress_traj = calc_func(curr_traj, dim_set, traj_time, epsilon * alpha, epsilon2 * alpha, calc_DP,
                                           calc_SED)
             else:
                 max_epsilon, idx, epsilon = traj_max_dists(curr_traj, traj_time, calc_func)

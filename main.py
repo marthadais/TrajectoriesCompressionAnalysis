@@ -11,13 +11,13 @@ n_samples = None
 #FISHING
 # vessel_type = [30, 1001, 1002]
 #CARGO:
-vessel_type = list(range(70, 80)) + [1003, 1004, 1016]
+# vessel_type = list(range(70, 80)) + [1003, 1004, 1016]
 #PASSANGER:
 # vessel_type = list(range(60, 70)) + [1012, 1013, 1014, 1015]
 #TUG TOW:
 # vessel_type = [21, 22, 31, 32, 52, 1023, 1025]
 #TANKER:
-# vessel_type = list(range(80, 90)) + [1017, 1024]
+vessel_type = list(range(80, 90)) + [1017, 1024]
 #MILITARY:
 # vessel_type = [35, 1021]
 #PLEASURE:
@@ -37,14 +37,18 @@ dim_set = ['lat', 'lon']
 # region_limits = [33.3, 33.9, -118.5, -117.5]
 # region_limits = [33.3, 34, -119.7, -117.5]
 # Francisco Bay
-region_limits = [37.6, 39, -122.9, -122.2]
+# region_limits = [37.6, 39, -122.9, -122.2]
 # region_limits = [37.2, 37.6, -123.1, -122.4]
 # Bering Strait
 # region_limits = [50, 70, -180, -150]
 
+#test
+region_limits = [33.3, 49.3, -125.5, -117.5]
+
 # Creating dataset
 dataset = Trajectories(n_samples=n_samples, vessel_type=vessel_type, time_period=(start_day, end_day),
                        region=region_limits)
+aushuahsuahs
 metric = 'dtw'
 
 folder = f'./results/DCAIS/type_{vessel_type}/period_{start_day.date()}_to_{end_day.date()}/{metric}/'
@@ -55,7 +59,7 @@ if not os.path.exists(folder):
     os.makedirs(folder)
 
 print(folder)
-aushuahsuahs
+
 # Compression
 rates1, times1 = analysis.factor_analysis(dataset, 'DP', folder)
 rates2, times2 = analysis.factor_analysis(dataset, 'TR', folder)
