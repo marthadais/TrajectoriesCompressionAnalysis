@@ -76,34 +76,22 @@ def MD(a, b):
     return md_dist
 
 
-### functions to gpu ###
-@jit
-def _dist_func2(dataset, metric, mmsis, dim_set, id_b, s_a):
-    # trajectory b
-    t0 = time.time_ns()
-    s_b = [dataset[mmsis[id_b]][dim] for dim in dim_set]
-    # compute distance
-    if metric == 'dtw':
-        dist = fastdtw(np.array(s_a).T, np.array(s_b).T, dist=haversine)[0]
-    else:
-        dist = MD(np.array(s_a).T, np.array(s_b).T)
-    t1 = time.time_ns() - t0
-    return dist, t1
-
-
 ### functions to parallelize ###
 @jit(forceobj=True)
 def _dist_func(dataset, metric, mmsis, dim_set, id_b, id_a, s_a, dist_matrix, process_time):
     # trajectory b
-    t0 = time.time_ns()
+    t0 = time.time()
     s_b = [dataset[mmsis[id_b]][dim] for dim in dim_set]
     # compute distance
     if metric == 'dtw':
         dist_matrix[mmsis[id_a]][mmsis[id_b]] = fastdtw(np.array(s_a).T, np.array(s_b).T, dist=haversine)[0]
     else:
+        # if id_b % 10 ==0:
+        print(f'\t{id_b} of {len(mmsis)}')
         dist_matrix[mmsis[id_a]][mmsis[id_b]] = MD(np.array(s_a).T, np.array(s_b).T)
+
     dist_matrix[mmsis[id_b]][mmsis[id_a]] = dist_matrix[mmsis[id_a]][mmsis[id_b]]
-    t1 = time.time_ns() - t0
+    t1 = time.time() - t0
     process_time[mmsis[id_a]][mmsis[id_b]] = t1
     process_time[mmsis[id_b]][mmsis[id_a]] = t1
 
@@ -128,11 +116,6 @@ def compute_distance_matrix(dataset, path, verbose=True, njobs=15, metric='dtw')
             Parallel(n_jobs=njobs, require='sharedmem')(delayed(_dist_func)(dataset, metric, _mmsis, _dim_set, id_b, id_a,
                                                                             s_a, dist_matrix, process_time)
                                                         for id_b in list(range(id_a + 1, len(_mmsis))))
-            # aux = [_dist_func2(dataset, metric, _mmsis, _dim_set, id_b, s_a) for id_b in list(range(id_a + 1, len(_mmsis)))]
-            # numba.cuda.profile_stop()
-            # for id_b in list(range(id_a + 1, len(_mmsis))):
-            #     dist_matrix[_mmsis[id_a]][_mmsis[id_b]], process_time[_mmsis[id_a]][_mmsis[id_b]] = aux[id_b]
-            #     dist_matrix[_mmsis[id_b]][_mmsis[id_a]], process_time[_mmsis[id_b]][_mmsis[id_a]] = aux[id_b]
 
         dist_matrix = dict_reorder(dist_matrix)
         process_time = dict_reorder(process_time)
@@ -146,6 +129,5 @@ def compute_distance_matrix(dataset, path, verbose=True, njobs=15, metric='dtw')
         # print('\tDistances already computed.')
     dm_path = f'{path}/distances.p'
     process_time_path = f'{path}/distances_time.p'
-
 
     return dm_path, process_time_path

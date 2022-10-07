@@ -43,9 +43,9 @@ class Clustering:
         self.time_path = f'{self.path}/time_hdbscan_{self._min_samples}.csv'
 
         # if not os.path.exists(self.results_file_path):
-        t0 = time.time_ns()
+        t0 = time.time()
         self.computer_clustering()
-        t1 = time.time_ns() - t0
+        t1 = time.time() - t0
         self.time_elapsed = t1
         pickle.dump(self.time_elapsed, open(self.time_path, 'wb'))
         # else:
@@ -102,12 +102,12 @@ class Clustering:
         It includes the label information provided by the Clustering algorithm into the dataset.
         """
         data = pd.read_csv(self.ais_data_path)
-        labels = pd.DataFrame([self.labels], columns=data['trajectory'].unique()).to_dict('records')[0]
-        aux = data['trajectory']
+        labels = pd.DataFrame([self.labels], columns=data['trips'].unique()).to_dict('records')[0]
+        aux = data['trips']
         aux = aux.map(labels)
         aux.name = 'Clusters'
         cluster_dataset = pd.concat([data, aux], axis=1)
-        labels_mmsi = cluster_dataset[['mmsi', 'trajectory', 'Clusters']].drop_duplicates()
+        labels_mmsi = cluster_dataset[['mmsi', 'trips', 'Clusters']].drop_duplicates()
         cluster_dataset.to_csv(self.results_file_path)
         labels_mmsi.to_csv(self.labels_file_path)
 
