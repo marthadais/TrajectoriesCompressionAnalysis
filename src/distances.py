@@ -8,7 +8,36 @@ from itertools import product
 import time
 from numba import njit, jit, cuda
 import numba
+import hausdorff
+from src.frechet_d import fast_frechet
 
+
+def angle_between(sa, ea, sb, eb):
+    """
+    It computes the Perpendicular Distance (PD)
+    """
+    ean = ea-sa
+    ebn = eb-sb
+    ab = (ean*ebn).sum()
+    anorm = np.sqrt((ean**2).sum())
+    bnorm = np.sqrt((ebn**2).sum())
+    angle = np.arccos((ab/(anorm*bnorm)))
+    angle = np.degrees(angle)
+
+    return angle
+
+
+def proj_ortogonal(s,e,p):
+    """
+    It computes the Perpendicular Distance (PD)
+    """
+    en = e-s
+    pn = p-s
+    ab = (en*pn).sum()
+    anorm = (en**2).sum()
+    proj_B_A = ((ab*en)/anorm) + s
+
+    return proj_B_A
 
 def dict_reorder(x):
     """
@@ -17,6 +46,29 @@ def dict_reorder(x):
     :return: dict ordered
     """
     return {k: dict_reorder(v) if isinstance(v, dict) else v for k, v in sorted(x.items())}
+
+
+def TRACLUS_dist(a, b):
+    projb0 = proj_ortogonal(a[0], a[-1], b[0])
+    projb1 = proj_ortogonal(a[0], a[-1], b[-1])
+
+    l1pd = np.sqrt(((b[0] - projb0) ** 2).sum())
+    l2pd = np.sqrt(((b[-1] - projb1) ** 2).sum())
+    pd = 0
+    if (l1pd + l2pd) != 0 :
+        pd = (l1pd ** 2 + l2pd ** 2) / (l1pd + l2pd)
+
+    l1pl = min(np.sqrt(((a[0] - projb0) ** 2).sum()),np.sqrt(((a[-1] - projb0) ** 2).sum()))
+    l2pl = min(np.sqrt(((a[0] - projb1) ** 2).sum()),np.sqrt(((a[-1] - projb1) ** 2).sum()))
+    pl = min(l1pl,l2pl)
+
+    theta = angle_between(a[0], a[-1], b[0], b[-1])
+    if theta < 90:
+        dtheta = np.sqrt(((b[0] - b[-1]) ** 2).sum()) * np.sin(theta)
+    else:
+        dtheta = np.sqrt(((b[0] - b[-1]) ** 2).sum())
+
+    return pd+pl+dtheta
 
 
 @jit(forceobj=True)
@@ -77,7 +129,7 @@ def MD(a, b):
 
 
 ### functions to parallelize ###
-@jit(forceobj=True)
+# @jit(forceobj=True)
 def _dist_func(dataset, metric, mmsis, dim_set, id_b, id_a, s_a, dist_matrix, process_time):
     # trajectory b
     t0 = time.time()
@@ -85,11 +137,18 @@ def _dist_func(dataset, metric, mmsis, dim_set, id_b, id_a, s_a, dist_matrix, pr
     # compute distance
     if metric == 'dtw':
         dist_matrix[mmsis[id_a]][mmsis[id_b]] = fastdtw(np.array(s_a).T, np.array(s_b).T, dist=haversine)[0]
-    else:
-        # if id_b % 10 ==0:
-        print(f'\t{id_b} of {len(mmsis)}')
+    elif metric == 'md':
         dist_matrix[mmsis[id_a]][mmsis[id_b]] = MD(np.array(s_a).T, np.array(s_b).T)
-
+    elif metric == 'hausdorff':
+        dist_matrix[mmsis[id_a]][mmsis[id_b]] = hausdorff.hausdorff_distance(np.array(s_a).T, np.array(s_b).T, 'haversine')
+    elif metric == 'frechat':
+        dist_matrix[mmsis[id_a]][mmsis[id_b]] = fast_frechet(np.array(s_a).T, np.array(s_b).T)
+    else:
+        dist_matrix[mmsis[id_a]][mmsis[id_b]] = TRACLUS_dist(np.array(s_a).T, np.array(s_b).T)
+    print(f'dist = {id_a}, {id_b}')
+    print(mmsis[id_a])
+    print(mmsis[id_b])
+    print(dist_matrix[mmsis[id_a]][mmsis[id_b]])
     dist_matrix[mmsis[id_b]][mmsis[id_a]] = dist_matrix[mmsis[id_a]][mmsis[id_b]]
     t1 = time.time() - t0
     process_time[mmsis[id_a]][mmsis[id_b]] = t1
@@ -100,6 +159,7 @@ def compute_distance_matrix(dataset, path, verbose=True, njobs=15, metric='dtw')
     if not os.path.exists(f'{path}/distances.p'):
         _dim_set = ['lat', 'lon']
         _mmsis = list(dataset.keys())
+        _mmsis = _mmsis[0:5]
 
         dist_matrix = {}
         process_time = {}

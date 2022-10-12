@@ -245,7 +245,7 @@ def compression(dataset, metric='TR', verbose=True, alpha=1):
         if verbose:
             print(f"\tCompressing {id_mmsi} of {len(mmsis)}")
         # trajectory a
-        t0 = time.time_ns()
+        t0 = time.time()
         curr_traj = dataset[mmsis[id_mmsi]]
         # get time in seconds
         traj_time = curr_traj['time'].astype('datetime64[s]')
@@ -293,7 +293,7 @@ def compression(dataset, metric='TR', verbose=True, alpha=1):
 
         compress_traj['time'] = compress_traj['time'].astype('datetime64[s]')
         new_dataset[mmsis[id_mmsi]] = compress_traj
-        t1 = time.time_ns() - t0
+        t1 = time.time() - t0
         # if verbose:
         #     print(f"\tlength before: {len(curr_traj['lat'])}, length now: {len(compress_traj['lat'])}, reduction of {1 - len(compress_traj['lat'])/len(curr_traj['lat'])}")
         compression_rate = np.append(compression_rate, 1 - (len(compress_traj['lat']) / len(curr_traj['lat'])))
