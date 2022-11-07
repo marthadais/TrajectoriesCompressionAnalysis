@@ -16,8 +16,8 @@ data_path = './data/crop/DCAIS_[30, 1001, 1002]_region_[37.6, 39, -122.9, -122.2
 file_name = os.path.basename(data_path)
 file_name = os.path.splitext(file_name)[0]
 
-# metric = 'frechat'
-metric = 'md'
+metric = 'frechat'
+# metric = 'md'
 # metric = 'dtw'
 
 folder = f'./results/crop/{file_name}/{metric}/'
