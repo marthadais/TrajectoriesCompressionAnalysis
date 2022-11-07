@@ -6,10 +6,8 @@ import os
 from joblib import Parallel, delayed
 from itertools import product
 import time
-from numba import njit, jit, cuda
-import numba
+from numba import jit
 import hausdorff
-from src.frechet_d import fast_frechet
 
 
 def angle_between(sa, ea, sb, eb):
@@ -145,10 +143,7 @@ def _dist_func(dataset, metric, mmsis, dim_set, id_b, id_a, s_a, dist_matrix, pr
         dist_matrix[mmsis[id_a]][mmsis[id_b]] = fast_frechet(np.array(s_a).T, np.array(s_b).T)
     else:
         dist_matrix[mmsis[id_a]][mmsis[id_b]] = TRACLUS_dist(np.array(s_a).T, np.array(s_b).T)
-    print(f'dist = {id_a}, {id_b}')
-    print(mmsis[id_a])
-    print(mmsis[id_b])
-    print(dist_matrix[mmsis[id_a]][mmsis[id_b]])
+    print(f'dist = {id_a}, {id_b} = {dist_matrix[mmsis[id_a]][mmsis[id_b]]}')
     dist_matrix[mmsis[id_b]][mmsis[id_a]] = dist_matrix[mmsis[id_a]][mmsis[id_b]]
     t1 = time.time() - t0
     process_time[mmsis[id_a]][mmsis[id_b]] = t1
@@ -159,7 +154,6 @@ def compute_distance_matrix(dataset, path, verbose=True, njobs=15, metric='dtw')
     if not os.path.exists(f'{path}/distances.p'):
         _dim_set = ['lat', 'lon']
         _mmsis = list(dataset.keys())
-        _mmsis = _mmsis[0:5]
 
         dist_matrix = {}
         process_time = {}

@@ -47,6 +47,8 @@ def get_raw_dataset(dataset_path):
     """
     dataset = pd.read_csv(dataset_path, parse_dates=['time'], low_memory=False)
     dataset['time'] = dataset['time'].astype('datetime64[ns]')
+    if not 'trips' in dataset.columns:
+        dataset = dataset.rename(columns={'trajectory': 'trips'})
     dataset = dataset.sort_values(by=['trips', "time"])
     dataset_dict = pandas_to_dict(dataset)
 
@@ -65,15 +67,16 @@ def compress_trips(dataset_path, compress='DP', alpha=1, **args):
     file_name = os.path.basename(dataset_path)
     file_name = os.path.splitext(file_name)[0]
 
-    compress_path = f"./data/preprocessed/compressed/DCAIS_{file_name}_{compress}_{alpha}.csv"
-    compress_rate_path = f"./data/preprocessed/compressed/DCAIS__{file_name}_{compress}_{alpha}_compress_rate.p"
-    time_rate_path = f"./data/preprocessed/compressed/DCAIS__{file_name}_{compress}_{alpha}_compress_time.p"
+    compress_path = f"./data/compressed/{file_name}_{compress}_{alpha}.csv"
+    compress_rate_path = f"./data/compressed/{file_name}_{compress}_{alpha}_compress_rate.p"
+    time_rate_path = f"./data/compressed/{file_name}_{compress}_{alpha}_compress_time.p"
 
     if not os.path.exists(compress_path):
         if not os.path.exists(f"./data/preprocessed/compressed/"):
             os.makedirs(f"./data/preprocessed/compressed/")
         compress_dataset, compression_rate, processing_time = compression(dataset=dataset_dict, metric=compress, alpha=alpha)
         dataset = dict_to_pandas(compress_dataset)
+        dataset = dataset.drop_duplicates()
         dataset.to_csv(compress_path, index=False)
         pickle.dump(compression_rate, open(compress_rate_path, 'wb'))
         pickle.dump(processing_time, open(time_rate_path, 'wb'))
