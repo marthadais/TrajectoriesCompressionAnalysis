@@ -14,7 +14,8 @@ from sklearn.manifold import MDS
 
 def get_time(path):
     """
-    It reads and computes the total processing time of the distances calculations by getting the upper triangle of the matrix.
+    It reads and computes the total processing time of the distances calculations
+     by getting the upper triangle of the matrix.
 
     :param path: path that contains the matrix with the processing time.
     :return: the total processing time
@@ -39,22 +40,19 @@ def purity_score(y_true, y_pred):
     return np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
 
 
-def lines_ca_score(folder, score, options, col, lines_style, mark_size, line_size):
+def lines_ca_score(folder, score, options, comp_lbl, col, lines_style, mark_size, line_size):
     """
     It plots the lines for the clustering score.
 
     :param folder: folder that contains the results.
     :param score: measure to evaluate the cluster.
     :param options: compression methods evaluated.
+    :param comp_lbl: labels of the compression techniques.
     :param col: color vector.
     :param lines_style: line style.
     :param mark_size: size of the marks.
     :param line_size: size of the lines.
     """
-    # comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
-    comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR', 'DP_SP': 'DP+SB',
-                'SP_DP': 'SB+DP', 'TR_DP': 'TR+DP', 'DP_TR': 'DP+TR'}
-
     fig = plt.figure(figsize=(10, 8))
     i = 0
     for compress_opt in options:
@@ -75,27 +73,26 @@ def lines_ca_score(folder, score, options, col, lines_style, mark_size, line_siz
     plt.close()
 
 
-def time_mean(folder, item, options, col, lines_style, mark_size, line_size):
+def time_mean(folder, item, options, comp_lbl, col, lines_style, mark_size, line_size):
     """
     It plots the lines for the processing time.
 
     :param folder: folder that contains the results.
     :param item: rates or processing time.
     :param options: compression methods evaluated.
+    :param comp_lbl: labels of the compression techniques.
     :param col: color vector.
     :param lines_style: line style.
     :param mark_size: size of the marks.
     :param line_size: size of the lines.
     """
-    # comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
-    comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR', 'DP_SP': 'DP+SB',
-                'SP_DP': 'SB+DP', 'TR_DP': 'TR+DP', 'DP_TR': 'DP+TR'}
     fig = plt.figure(figsize=(10, 8))
     i=0
     for compress_opt in options:
         x = pd.read_csv(f'{folder}/{compress_opt}-compression_{item}.csv')
-        plt.plot(range(len(x.mean(axis=0))), x.mean(axis=0).iloc[x.shape[0]:None:-1], color=col[i], marker="p", linestyle=lines_style[i], linewidth=line_size[i],
-        markersize=mark_size[i], label=comp_lbl[compress_opt])
+        plt.plot(range(len(x.mean(axis=0))), x.mean(axis=0).iloc[x.shape[0]:None:-1], color=col[i], marker="p",
+                 linestyle=lines_style[i], linewidth=line_size[i],
+                 markersize=mark_size[i], label=comp_lbl[compress_opt])
         i = i+1
     plt.ylabel(f'Average of Compression {item}',fontsize=25)
     plt.xlabel('Factors',fontsize=25)
@@ -124,7 +121,8 @@ def lines_compression(folder, metric='dtw'):
     comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR', 'DP_SP': 'DP+SB',
                 'SP_DP': 'SB+DP', 'TR_DP': 'TR+DP', 'DP_TR': 'DP+TR'}
     # col = ['crimson', 'blue', 'green', 'darkorange', 'black', 'violet', 'chocolate', 'blueviolet', 'olive']
-    col = ['tab:red', 'tab:blue', 'tab:green', 'tab:orange', 'black', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:olive']
+    col = ['tab:red', 'tab:blue', 'tab:green', 'tab:orange', 'black', 'tab:purple', 'tab:brown',
+           'tab:pink', 'tab:olive']
     lines_style = [(0, (3,1,1,1)), (0, (5, 1)), (0, (3, 5, 1, 5)), 'dotted',
                    (0, (1, 3)), 'dashdot', (0, (3, 3, 1, 3)), (0, (3, 1, 1, 1, 1, 1)), 'solid']
     mark_size = ['11', '11', '11', '9', '9', '6', '6', '3', '3']
@@ -133,10 +131,10 @@ def lines_compression(folder, metric='dtw'):
                    r'$\frac{1}{8}$', r'$\frac{1}{4}$', r'$\frac{1}{2}$', r'$1$', r'$1.5$', r'$2$']
 
     # plot the compression rates
-    time_mean(folder, 'rates', options, col, lines_style, mark_size, line_size)
+    time_mean(folder, 'rates', options, comp_lbl, col, lines_style, mark_size, line_size)
 
     # figure of the total processing time
-    fig = plt.figure(figsize=(10,8))
+    fig = plt.figure(figsize=(10, 8))
     i = 0
     for compress_opt in options:
         times_cl = pd.read_csv(f'{folder}/clustering_{compress_opt}_times.csv', index_col=0)
@@ -158,8 +156,10 @@ def lines_compression(folder, metric='dtw'):
     plt.close()
 
     # figure of the clustering purity
-    lines_ca_score(folder, 'mh', options, col, lines_style=lines_style, mark_size=mark_size, line_size=line_size)
-    lines_ca_score(folder, 'nmi', options, col, lines_style=lines_style, mark_size=mark_size, line_size=line_size)
+    lines_ca_score(folder, 'mh', options, comp_lbl, col, lines_style=lines_style,
+                   mark_size=mark_size, line_size=line_size)
+    lines_ca_score(folder, 'nmi', options, comp_lbl, col, lines_style=lines_style,
+                   mark_size=mark_size, line_size=line_size)
 
     # figure of the pearson correlation
     fig = plt.figure(figsize=(10, 8))
@@ -223,18 +223,19 @@ def factor_dist_analysis(dataset_path, compress_opt, folder, ncores=15, metric='
     features_folder = f'{folder}/NO/'
     if not os.path.exists(features_folder):
         os.makedirs(features_folder)
-    features_path, main_time = compute_distance_matrix(get_raw_dataset(dataset_path), features_folder, verbose=True, njobs=ncores, metric=metric)
+    features_path, main_time = compute_distance_matrix(get_raw_dataset(dataset_path), features_folder, verbose=True,
+                                                       njobs=ncores, metric=metric)
 
-    dtw_raw = pickle.load(open(features_path, 'rb'))
-    print(dtw_raw)
-    dtw_raw = dtw_raw/dtw_raw.max().max()
-    dtw_raw[np.isinf(dtw_raw)] = dtw_raw[~np.isinf(dtw_raw)].max() + 1
-    dtw_raw[dtw_raw < 0] = 0
-    dtw_raw = dtw_raw/dtw_raw.max().max()
-    # mapData(dtw_raw, 'NO')
+    dist_raw = pickle.load(open(features_path, 'rb'))
+    print(dist_raw)
+    dist_raw = dist_raw/dist_raw.max().max()
+    dist_raw[np.isinf(dist_raw)] = dist_raw[~np.isinf(dist_raw)].max() + 1
+    dist_raw[dist_raw < 0] = 0
+    dist_raw = dist_raw/dist_raw.max().max()
+    # mapData(dist_raw, 'NO')
 
-    dtw_raw_time = get_time(main_time)
-    times = pd.concat([times, pd.DataFrame(dtw_raw_time)], axis=1)
+    dist_raw_time = get_time(main_time)
+    times = pd.concat([times, pd.DataFrame(dist_raw_time)], axis=1)
     for i in factors:
         comp_dataset, comp_rate, comp_times = compress_trips(dataset_path, compress=compress_opt, alpha=i)
         features_folder = f'{folder}/{compress_opt}-{i}/'
@@ -251,7 +252,8 @@ def factor_dist_analysis(dataset_path, compress_opt, folder, ncores=15, metric='
         dtw_factor = dtw_factor/dtw_factor.max().max()
         print(dtw_factor)
         # mapData(dtw_factor, f'{i}')
-        measures[i]['mantel-corr'], measures[i]['mantel-pvalue'], _ = mantel.test(dtw_raw, dtw_factor, method='pearson', tail='upper')
+        measures[i]['mantel-corr'], measures[i]['mantel-pvalue'], _ = mantel.test(dist_raw, dtw_factor,
+                                                                                  method='pearson', tail='upper')
         print(f"mantel - factor {i}: {measures[i]['mantel-corr']} - {measures[i]['mantel-pvalue']}")
 
         dtw_factor_time = get_time(feature_time)
@@ -287,10 +289,12 @@ def factor_cluster_analysis(dataset_path, compress_opt, folder, ncores=15, metri
     features_folder = f'{folder}/NO/'
     if not os.path.exists(features_folder):
         os.makedirs(features_folder)
-    features_path, _ = compute_distance_matrix(get_raw_dataset(dataset_path), features_folder, verbose=True, njobs=ncores, metric=metric)
+    features_path, _ = compute_distance_matrix(get_raw_dataset(dataset_path), features_folder, verbose=True,
+                                               njobs=ncores, metric=metric)
 
     #clustering
-    model = Clustering(ais_data_path=dataset_path, distance_matrix_path=features_path, folder=features_folder, norm_dist=True)
+    model = Clustering(ais_data_path=dataset_path, distance_matrix_path=features_path, folder=features_folder,
+                       norm_dist=True)
     times_cl['no'] = model.time_elapsed
     labels_raw = model.labels
     for i in factors:
@@ -303,7 +307,8 @@ def factor_cluster_analysis(dataset_path, compress_opt, folder, ncores=15, metri
         features_path, feature_time = compute_distance_matrix(comp_dataset, features_folder, verbose=True,
                                                                    njobs=ncores, metric=metric)
         # clustering
-        model = Clustering(ais_data_path=dataset_path, distance_matrix_path=features_path, folder=features_folder, norm_dist=True)
+        model = Clustering(ais_data_path=dataset_path, distance_matrix_path=features_path, folder=features_folder,
+                           norm_dist=True)
         times_cl[str(i)] = model.time_elapsed
         labels_factor = model.labels
 

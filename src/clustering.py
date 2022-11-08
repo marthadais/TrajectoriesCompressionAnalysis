@@ -25,7 +25,7 @@ class Clustering:
         self.dm[np.isinf(self.dm)] = self.dm[~np.isinf(self.dm)].max() + 1
         if 'norm_dist' in args.keys():
             if args['norm_dist']:
-                if self.dm < 0:
+                if (self.dm < 0).sum() > 0:
                     self.dm = abs(self.dm)
                 self.dm = self.dm/self.dm.max().max()
 
