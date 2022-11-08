@@ -1,10 +1,9 @@
-from sklearn.cluster import DBSCAN
 import os, pickle
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 import time
 import hdbscan
+
 
 class Clustering:
     def __init__(self, ais_data_path, distance_matrix_path, folder, verbose=True, **args):

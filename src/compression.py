@@ -1,13 +1,13 @@
+# adapt from https://github.com/uestc-db/traj-compression/blob/master/batch/TD-TR/TD-TR.cpp
+
 import numpy as np
 import time
-import sys
-# adapt from https://github.com/uestc-db/traj-compression/blob/master/batch/TD-TR/TD-TR.cpp
-import pandas as pd
 
 
 def calc_SED(pA, pI, pB):
     """
     It computes the Synchronous Euclidean Distance (SED) error
+
     :param pA: initial point
     :param pI: middle point
     :param pB: final point
@@ -36,6 +36,7 @@ def calc_SED(pA, pI, pB):
 def calc_DP(pA, pI, pB):
     """
     It computes the Perpendicular Distance (PD)
+
     :param pA: initial point
     :param pI: middle point
     :param pB: final point
@@ -61,6 +62,7 @@ def calc_DP(pA, pI, pB):
 def calc_AVS(pA, pI, pB):
     """
     It computes the absolute value of speed (AVS)
+
     :param pA: initial point
     :param pI: middle point
     :param pB: final point
@@ -86,12 +88,16 @@ def calc_AVS(pA, pI, pB):
 
 def calc_TR_SP(trajectory, dim_set, traj_time, epsilon, epsilon2, calc_func, calc_func2):
     """
-    It compress the trajectory using the Time Ration technique.
-    It is a recursive method, dividing the trajectory and compression both parts
+    It compress the trajectory using the two compression techniques.
+    It is a recursive method, dividing the trajectory and compression both parts.
+
     :param trajectory: a single trajectory or a part of if
     :param dim_set: the attributes in the dict trajectory
     :param traj_time: the array with the time in seconds of each point
-    :param epsilon: the threshold
+    :param epsilon: the threshold for the first compression
+    :param epsilon2: the threshold for second compression
+    :param calc_func: the measure for the first selected compression
+    :param calc_func2: the measure for the second selected compression
     :return: the compressed trajectory (dict)
     """
     new_trajectory = {}
@@ -108,7 +114,6 @@ def calc_TR_SP(trajectory, dim_set, traj_time, epsilon, epsilon2, calc_func, cal
 
     trajectory['time'] = trajectory['time'].astype(str)
 
-    # print(f'\tepsilon: {epsilon}, dmax: {dmax}, index: {idx}, trajlen: {traj_len}')
     if (dmax > epsilon) & (d_idx > epsilon2):
         traj1 = {}
         traj2 = {}
@@ -141,9 +146,11 @@ def calc_TR_SP(trajectory, dim_set, traj_time, epsilon, epsilon2, calc_func, cal
 
 def traj_max_dists(trajectory, traj_time, calc_func):
     """
-    It computes the selected distance for all points in between
+    It computes the selected measure for all points in between.
+
     :param trajectory: a single dict trajectory having the keys as each attribute
     :param traj_time: an array with the seconds of each point
+    :param calc_func: the measure for the selected compression
     :return: the maximum distance, the index that provide the maximum distance, and the average of distances
     """
     dmax = 0
@@ -169,11 +176,13 @@ def traj_max_dists(trajectory, traj_time, calc_func):
 
 def traj_compression(trajectory, dim_set, traj_time, calc_func, epsilon):
     """
-    It compress the trajectory using the Time Ration technique.
-    It is a recursive method, dividing the trajectory and compression both parts
+    It compress the trajectory using the compression technique.
+    It is a recursive method, dividing the trajectory and compression both parts.
+
     :param trajectory: a single trajectory or a part of if
     :param dim_set: the attributes in the dict trajectory
     :param traj_time: the array with the time in seconds of each point
+    :param calc_func: the measure for the selected compression
     :param epsilon: the threshold
     :return: the compressed trajectory (dict)
     """
@@ -218,6 +227,15 @@ def traj_compression(trajectory, dim_set, traj_time, calc_func, epsilon):
 
 
 def compression(dataset, metric='TR', verbose=True, alpha=1):
+    """
+    It compress the dataset of trajectories using the selected compression technique.
+
+    :param dataset: dict dataset with trajectories
+    :param metric: the compression technique or combination of them (Default: TR).
+    :param verbose: if True, it shows the messages (Default: True).
+    :param alpha: the predefined factor (Default: 1).
+    :return: the compressed dataset, compression rate, and processing time.
+    """
     # sys.setrecursionlimit(2200)
     metrics = {'TR': calc_SED,
                'DP': calc_DP,

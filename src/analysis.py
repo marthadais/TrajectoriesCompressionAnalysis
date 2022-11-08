@@ -12,11 +12,49 @@ from preprocessing.compress_trajectories import compress_trips, get_raw_dataset
 from sklearn.manifold import MDS
 
 
+def get_time(path):
+    """
+    It reads and computes the total processing time of the distances calculations by getting the upper triangle of the matrix.
+
+    :param path: path that contains the matrix with the processing time.
+    :return: the total processing time
+    """
+    up = pickle.load(open(path, 'rb'))
+    up = pd.DataFrame.from_dict(up)
+    up[up.isna()] = 0
+    up = up.to_numpy()
+    up = up[np.triu_indices_from(up)]
+    return up
+
+
+def purity_score(y_true, y_pred):
+    """
+    It computes contingency matrix (also called confusion matrix) and the purity value.
+
+    :param y_true: true labels.
+    :param y_pred: predicted labels.
+    :return: purity measure
+    """
+    contingency_matrix = metrics.cluster.contingency_matrix(y_true, y_pred)
+    return np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
+
+
 def lines_ca_score(folder, score, options, col, lines_style, mark_size, line_size):
+    """
+    It plots the lines for the clustering score.
+
+    :param folder: folder that contains the results.
+    :param score: measure to evaluate the cluster.
+    :param options: compression methods evaluated.
+    :param col: color vector.
+    :param lines_style: line style.
+    :param mark_size: size of the marks.
+    :param line_size: size of the lines.
+    """
     # comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
     comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR', 'DP_SP': 'DP+SB',
                 'SP_DP': 'SB+DP', 'TR_DP': 'TR+DP', 'DP_TR': 'DP+TR'}
-    # figure of the clustering purity
+
     fig = plt.figure(figsize=(10, 8))
     i = 0
     for compress_opt in options:
@@ -38,6 +76,17 @@ def lines_ca_score(folder, score, options, col, lines_style, mark_size, line_siz
 
 
 def time_mean(folder, item, options, col, lines_style, mark_size, line_size):
+    """
+    It plots the lines for the processing time.
+
+    :param folder: folder that contains the results.
+    :param item: rates or processing time.
+    :param options: compression methods evaluated.
+    :param col: color vector.
+    :param lines_style: line style.
+    :param mark_size: size of the marks.
+    :param line_size: size of the lines.
+    """
     # comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
     comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR', 'DP_SP': 'DP+SB',
                 'SP_DP': 'SB+DP', 'TR_DP': 'TR+DP', 'DP_TR': 'DP+TR'}
@@ -60,42 +109,38 @@ def time_mean(folder, item, options, col, lines_style, mark_size, line_size):
 
 
 def lines_compression(folder, metric='dtw'):
+    """
+    It plots the lines for the compression rates, scores, and processing time.
+
+    :param folder: folder that contains the results.
+    :param metric: distance measure selected.
+    """
+    # parameters for the plot
     rc('text', usetex=True)
     rc('text.latex', preamble=r'\usepackage{cmbright}')
     rc('font', size=25)
     rc('legend', fontsize=25)
-    # options = ['DP', 'TR', 'SP']
     options = ['DP', 'TR', 'SP', 'TR_SP', 'SP_TR', 'DP_SP', 'SP_DP', 'TR_DP', 'DP_TR']
-    # comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
     comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR', 'DP_SP': 'DP+SB',
                 'SP_DP': 'SB+DP', 'TR_DP': 'TR+DP', 'DP_TR': 'DP+TR'}
-    # col = ['crimson', 'blue', 'green', 'darkorange', 'black']
-    col = ['crimson', 'blue', 'green', 'darkorange', 'black', 'violet', 'chocolate', 'blueviolet', 'olive']
+    # col = ['crimson', 'blue', 'green', 'darkorange', 'black', 'violet', 'chocolate', 'blueviolet', 'olive']
     col = ['tab:red', 'tab:blue', 'tab:green', 'tab:orange', 'black', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:olive']
-    # lines_style = [(0, (3,1,1,1)), 'dotted', 'dashed', 'dashdot', 'solid']
     lines_style = [(0, (3,1,1,1)), (0, (5, 1)), (0, (3, 5, 1, 5)), 'dotted',
                    (0, (1, 3)), 'dashdot', (0, (3, 3, 1, 3)), (0, (3, 1, 1, 1, 1, 1)), 'solid']
-    # mark_size = ['11', '9', '7', '5', '3']
     mark_size = ['11', '11', '11', '9', '9', '6', '6', '3', '3']
-    # line_size = ['3', '2.5', '2', '1.5', '1']
     line_size = ['3', '3', '3', '2', '2', '1.5', '1.5', '1', '1']
-    factors = [2, 1.5, 1, 1 / 2, 1 / 4, 1 / 8, 1 / 16, 1 / 32, 1 / 64, 1 / 128]
-    # factors_str = [r'$2$', r'$1.5$', r'$1$', r'$\frac{1}{2}$', r'$\frac{1}{4}$', r'$\frac{1}{8}$',
-    #                            r'$\frac{1}{16}$', r'$\frac{1}{32}$', r'$\frac{1}{64}$', r'$\frac{1}{128}$']
     factors_str = [r'$\frac{1}{128}$', r'$\frac{1}{64}$', r'$\frac{1}{32}$', r'$\frac{1}{16}$',
                    r'$\frac{1}{8}$', r'$\frac{1}{4}$', r'$\frac{1}{2}$', r'$1$', r'$1.5$', r'$2$']
 
+    # plot the compression rates
     time_mean(folder, 'rates', options, col, lines_style, mark_size, line_size)
-    # time_mean(folder, 'times', factors, options, col, lines_style, mark_size, line_size)
 
-    # figure of the total time
+    # figure of the total processing time
     fig = plt.figure(figsize=(10,8))
     i = 0
     for compress_opt in options:
         times_cl = pd.read_csv(f'{folder}/clustering_{compress_opt}_times.csv', index_col=0)
         times = pd.read_csv(f'{folder}/{metric}_{compress_opt}_times.csv')
-        if times.max().max() > 2e5:
-            times.iloc[:,1:] = times.iloc[:,1:]
         times = (times.sum(axis=0) + times_cl.T).T
         times_compression = pd.read_csv(f'{folder}/{compress_opt}-compression_times.csv')
         times_compression = times_compression
@@ -136,6 +181,14 @@ def lines_compression(folder, metric='dtw'):
 
 
 def factor_analysis(dataset_path, compress_opt, folder):
+    """
+    It evaluates each compression technique in the dataset for different factors.
+
+    :param dataset_path: path of the dataset.
+    :param compress_opt: compression technique under analysis.
+    :param folder: folder to save the results.
+    :return: compression rate and processing time
+    """
     factors = [2, 1.5, 1, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128]
     rates = pd.DataFrame()
     times = pd.DataFrame()
@@ -152,30 +205,17 @@ def factor_analysis(dataset_path, compress_opt, folder):
     return rates, times
 
 
-def get_time_dtw(path):
-    up = pickle.load(open(path, 'rb'))
-    up = pd.DataFrame.from_dict(up)
-    up[up.isna()] = 0
-    up = up.to_numpy()
-    up = up[np.triu_indices_from(up)]
-    # up = up * 1e-9
-    return up
-
-
-def mapData(dist_matrix, title):
-    mds = MDS(dissimilarity='precomputed', random_state=0)
-    proj = mds.fit_transform(dist_matrix)
-    fig = plt.figure(1)
-    # change the fontsize of the xtick and ytick labels and axes
-    plt.rc('xtick', labelsize=15)
-    plt.rc('ytick', labelsize=15)
-    plt.rc('axes', labelsize=15)
-    plt.scatter(proj[:, 0], proj[:, 1], color='gray')
-    plt.title(title)
-    plt.show()
-
-
 def factor_dist_analysis(dataset_path, compress_opt, folder, ncores=15, metric='dtw'):
+    """
+    It evaluates the distance matrix of each compression technique in the dataset for different factors.
+
+    :param dataset_path: path of the dataset.
+    :param compress_opt: compression technique under analysis.
+    :param folder: folder to save the results.
+    :param ncores: number of cores for parallel process (Default: 15).
+    :param metric: distance measure selected (Default: 'dtw').
+    :return: compression rate and processing time
+    """
     factors = [2, 1.5, 1, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128]
     times = pd.DataFrame()
     # comparing distances
@@ -193,7 +233,7 @@ def factor_dist_analysis(dataset_path, compress_opt, folder, ncores=15, metric='
     dtw_raw = dtw_raw/dtw_raw.max().max()
     # mapData(dtw_raw, 'NO')
 
-    dtw_raw_time = get_time_dtw(main_time)
+    dtw_raw_time = get_time(main_time)
     times = pd.concat([times, pd.DataFrame(dtw_raw_time)], axis=1)
     for i in factors:
         comp_dataset, comp_rate, comp_times = compress_trips(dataset_path, compress=compress_opt, alpha=i)
@@ -214,7 +254,7 @@ def factor_dist_analysis(dataset_path, compress_opt, folder, ncores=15, metric='
         measures[i]['mantel-corr'], measures[i]['mantel-pvalue'], _ = mantel.test(dtw_raw, dtw_factor, method='pearson', tail='upper')
         print(f"mantel - factor {i}: {measures[i]['mantel-corr']} - {measures[i]['mantel-pvalue']}")
 
-        dtw_factor_time = get_time_dtw(feature_time)
+        dtw_factor_time = get_time(feature_time)
         times = pd.concat([times, pd.DataFrame(dtw_factor_time)], axis=1)
 
     measures = pd.DataFrame(measures)
@@ -227,14 +267,18 @@ def factor_dist_analysis(dataset_path, compress_opt, folder, ncores=15, metric='
     return measures
 
 
-def purity_score(y_true, y_pred):
-    # compute contingency matrix (also called confusion matrix)
-    contingency_matrix = metrics.cluster.contingency_matrix(y_true, y_pred)
-    # return purity
-    return np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
-
-
 def factor_cluster_analysis(dataset_path, compress_opt, folder, ncores=15, metric='dtw'):
+    """
+    It evaluates the clustering results of distance matrix computed accordingly with each compression technique in the
+    dataset using different factors.
+
+    :param dataset_path: path of the dataset.
+    :param compress_opt: compression technique under analysis.
+    :param folder: folder to save the results.
+    :param ncores: number of cores for parallel process (Default: 15).
+    :param metric: distance measure selected (Default: 'dtw').
+    :return: compression rate and processing time
+    """
     factors = [2, 1.5, 1, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128]
     measures_mh = {}
     measures_nmi = {}
@@ -243,7 +287,7 @@ def factor_cluster_analysis(dataset_path, compress_opt, folder, ncores=15, metri
     features_folder = f'{folder}/NO/'
     if not os.path.exists(features_folder):
         os.makedirs(features_folder)
-    features_path,_ = compute_distance_matrix(get_raw_dataset(dataset_path), features_folder, verbose=True, njobs=ncores, metric=metric)
+    features_path, _ = compute_distance_matrix(get_raw_dataset(dataset_path), features_folder, verbose=True, njobs=ncores, metric=metric)
 
     #clustering
     model = Clustering(ais_data_path=dataset_path, distance_matrix_path=features_path, folder=features_folder, norm_dist=True)
