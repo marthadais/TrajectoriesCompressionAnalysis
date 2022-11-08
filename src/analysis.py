@@ -36,6 +36,7 @@ def lines_ca_score(folder, score, options, col, lines_style, mark_size, line_siz
     plt.savefig(f'{folder}/lines-clustering-{score}.png', bbox_inches='tight')
     plt.close()
 
+
 def time_mean(folder, item, options, col, lines_style, mark_size, line_size):
     # comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
     comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR', 'DP_SP': 'DP+SB',
@@ -113,12 +114,9 @@ def lines_compression(folder, metric='dtw'):
 
     # figure of the clustering purity
     lines_ca_score(folder, 'mh', options, col, lines_style=lines_style, mark_size=mark_size, line_size=line_size)
-    lines_ca_score(folder, 'mi', options, col, lines_style=lines_style, mark_size=mark_size, line_size=line_size)
     lines_ca_score(folder, 'nmi', options, col, lines_style=lines_style, mark_size=mark_size, line_size=line_size)
-    lines_ca_score(folder, 'ami', options, col, lines_style=lines_style, mark_size=mark_size, line_size=line_size)
-    lines_ca_score(folder, 'f1', options, col, lines_style=lines_style, mark_size=mark_size, line_size=line_size)
 
-    # figure of the pearson
+    # figure of the pearson correlation
     fig = plt.figure(figsize=(10, 8))
     i = 0
     for compress_opt in options:
@@ -134,24 +132,6 @@ def lines_compression(folder, metric='dtw'):
     plt.yticks(fontsize=20)
     # plt.tight_layout()
     plt.savefig(f'{folder}/lines-measure-mantel.png', bbox_inches='tight')
-    plt.close()
-
-    # # figure of the spearman
-    fig = plt.figure(figsize=(10, 8))
-    i = 0
-    for compress_opt in options:
-        measure = pd.read_csv(f'{folder}/measures_{metric}_{compress_opt}_times.csv', index_col=0)
-        measure = measure.loc['mantel-pvalue']
-        plt.plot(measure.iloc[measure.shape[0]:None:-1], color=col[i], marker="p", linestyle=lines_style[i],
-                 linewidth=line_size[i], markersize=mark_size[i], label=comp_lbl[compress_opt])
-        i = i + 1
-    plt.ylabel('Mantel Test p-value', fontsize=25)
-    plt.xlabel('Factors', fontsize=25)
-    plt.legend(fontsize=18)
-    plt.xticks(range(len(measure)), factors_str, fontsize=25)
-    plt.yticks(fontsize=20)
-    plt.tight_layout()
-    plt.savefig(f'{folder}/lines-measure-mantel-pvalue.png', bbox_inches='tight')
     plt.close()
 
 
@@ -256,13 +236,8 @@ def purity_score(y_true, y_pred):
 
 def factor_cluster_analysis(dataset_path, compress_opt, folder, ncores=15, metric='dtw'):
     factors = [2, 1.5, 1, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128]
-    measures_purity = {}
-    measures_coverage = {}
     measures_mh = {}
-    measures_mi = {}
     measures_nmi = {}
-    measures_ami = {}
-    measures_f1 = {}
     times_cl = {}
     # comparing distances
     features_folder = f'{folder}/NO/'
@@ -288,38 +263,24 @@ def factor_cluster_analysis(dataset_path, compress_opt, folder, ncores=15, metri
         times_cl[str(i)] = model.time_elapsed
         labels_factor = model.labels
 
-
         # measures
-        measures_f1[str(i)] = metrics.f1_score(labels_raw, labels_factor, average='macro')
-        measures_purity[str(i)] = purity_score(labels_raw, labels_factor)
-        measures_coverage[str(i)] = purity_score(labels_factor, labels_raw)
-        measures_mh[str(i)] = 2/(1/measures_purity[str(i)] + 1/measures_coverage[str(i)])
-        measures_mi[str(i)] = metrics.mutual_info_score(labels_raw, labels_factor)
+        measures_purity = purity_score(labels_raw, labels_factor)
+        measures_coverage = purity_score(labels_factor, labels_raw)
+        measures_mh[str(i)] = 2/(1/measures_purity + 1/measures_coverage)
         measures_nmi[str(i)] = metrics.normalized_mutual_info_score(labels_raw, labels_factor)
-        measures_ami[str(i)] = metrics.adjusted_mutual_info_score(labels_raw, labels_factor)
 
         print(f'raw = {labels_raw.max()}, {compress_opt}-{i} = {labels_factor.max()} - NMI = {measures_nmi[str(i)]}')
         print(labels_raw)
         print(labels_factor)
 
-    measures_f1 = pd.Series(measures_f1)
-    measures_f1.to_csv(f'{folder}/clustering_{compress_opt}_f1.csv')
-    measures_purity = pd.Series(measures_purity)
-    measures_purity.to_csv(f'{folder}/clustering_{compress_opt}_purity.csv')
-    measures_coverage = pd.Series(measures_coverage)
-    measures_coverage.to_csv(f'{folder}/clustering_{compress_opt}_coverage.csv')
     measures_mh = pd.Series(measures_mh)
     measures_mh.to_csv(f'{folder}/clustering_{compress_opt}_mh.csv')
-    measures_mi = pd.Series(measures_mi)
-    measures_mi.to_csv(f'{folder}/clustering_{compress_opt}_mi.csv')
     measures_nmi = pd.Series(measures_nmi)
     measures_nmi.to_csv(f'{folder}/clustering_{compress_opt}_nmi.csv')
-    measures_ami = pd.Series(measures_ami)
-    measures_ami.to_csv(f'{folder}/clustering_{compress_opt}_ami.csv')
 
     times_cl = pd.Series(times_cl)
     times_cl.columns = ['no'] + [str(i) for i in factors]
     times_cl.to_csv(f'{folder}/clustering_{compress_opt}_times.csv')
 
-    return measures_purity
+    return measures_nmi
 

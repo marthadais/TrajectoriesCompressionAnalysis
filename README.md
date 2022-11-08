@@ -26,6 +26,9 @@ The proposed methodology assess how compression algorithms may influence the clu
  
 2. source folder (src)
    - analysis.py: contains functions to analyze the different factors and plot images
+     1. compression analysis
+     2. distances analysis
+     3. clustering analysis
    - clustering.py: contains clustering class to compute the clustering 
    - compression.py: contains function to compute the compression
    - distance.py: contains functions to compute distance between trajectories
