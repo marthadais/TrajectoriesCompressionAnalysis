@@ -269,7 +269,7 @@ def factor_dist_analysis(dataset_path, compress_opt, folder, ncores=15, metric='
     return measures
 
 
-def factor_cluster_analysis(dataset_path, compress_opt, folder, ncores=15, metric='dtw'):
+def factor_cluster_analysis(dataset_path, compress_opt, folder, ncores=15, metric='dtw', mcs=2):
     """
     It evaluates the clustering results of distance matrix computed accordingly with each compression technique in the
     dataset using different factors.
@@ -285,6 +285,7 @@ def factor_cluster_analysis(dataset_path, compress_opt, folder, ncores=15, metri
     measures_mh = {}
     measures_nmi = {}
     times_cl = {}
+
     # comparing distances
     features_folder = f'{folder}/NO/'
     if not os.path.exists(features_folder):
@@ -294,7 +295,7 @@ def factor_cluster_analysis(dataset_path, compress_opt, folder, ncores=15, metri
 
     #clustering
     model = Clustering(ais_data_path=dataset_path, distance_matrix_path=features_path, folder=features_folder,
-                       norm_dist=True)
+                       minClusterSize=mcs, norm_dist=True)
     times_cl['no'] = model.time_elapsed
     labels_raw = model.labels
     for i in factors:
@@ -308,7 +309,7 @@ def factor_cluster_analysis(dataset_path, compress_opt, folder, ncores=15, metri
                                                                    njobs=ncores, metric=metric)
         # clustering
         model = Clustering(ais_data_path=dataset_path, distance_matrix_path=features_path, folder=features_folder,
-                           norm_dist=True)
+                           minClusterSize=mcs, norm_dist=True)
         times_cl[str(i)] = model.time_elapsed
         labels_factor = model.labels
 

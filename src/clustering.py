@@ -3,10 +3,11 @@ import numpy as np
 import pandas as pd
 import time
 import hdbscan
+import matplotlib.pyplot as plt
 
 
 class Clustering:
-    def __init__(self, ais_data_path, distance_matrix_path, folder, verbose=True, **args):
+    def __init__(self, ais_data_path, distance_matrix_path, folder, minClusterSize=2, verbose=True, **args):
         """
         It receives the path were is the dataset.
         It applies the clustering on the trajectories coefficients.
@@ -14,11 +15,13 @@ class Clustering:
         :param ais_data_path: the path were is the dataset
         :param distance_matrix_path: the path were is the distance matrix of the dataset
         :param folder: folder path to save the results
+        :param minClusterSize: minimum cluster size for hdbscan
         :param verbose: if True, it shows the messages (Default: True).
         """
         self.ais_data_path = ais_data_path
         self._verbose = verbose
         self.dm = abs(pickle.load(open(distance_matrix_path, 'rb')))
+        self.minClusterSize = minClusterSize
         self._model = None
         self.labels = None
 
@@ -27,7 +30,7 @@ class Clustering:
             if args['norm_dist']:
                 if (self.dm < 0).sum() > 0:
                     self.dm = abs(self.dm)
-                self.dm = self.dm/self.dm.max().max()
+                self.dm = self.dm/self.dm.max()
 
         # saving features
         self.path = f'{folder}/hdbscan'
@@ -51,10 +54,16 @@ class Clustering:
         if self._verbose:
             print(f'Clustering data using HDBSCAN')
 
-        # self._model = hdbscan.HDBSCAN(min_cluster_size=2, min_samples=1, cluster_selection_epsilon=0.003, metric='precomputed')
-        self._model = hdbscan.HDBSCAN(min_cluster_size=5, min_samples=1, cluster_selection_epsilon=0.003, allow_single_cluster=True, metric='precomputed')
-        model = self._model.fit(self.dm)
-        self.labels = model.labels_
+        self._model = hdbscan.HDBSCAN(min_cluster_size=self.minClusterSize, min_samples=1, allow_single_cluster=True, metric='precomputed')
+        self._model.fit(self.dm)
+        self._model.single_linkage_tree_.plot(cmap='viridis', colorbar=True)
+        # plt.show()
+        plt.tight_layout()
+        plt.savefig(f'{self.path}/dendogram-{self.minClusterSize}.png', bbox_inches='tight')
+        plt.close()
+        # self._model.condensed_tree_.plot()
+        # plt.show()
+        self.labels = self._model.labels_
         self._agg_cluster_labels()
 
     def _agg_cluster_labels(self):
