@@ -1,4 +1,5 @@
 import src.analysis as analysis
+import src.plot_images as pli
 import os
 
 # fishing vessels
@@ -23,26 +24,26 @@ if not os.path.exists(folder):
 print(folder)
 
 # Compression
-# rates_dp, times_dp = analysis.factor_analysis(data_path, 'DP', folder)
-# rates_tr, times_tr = analysis.factor_analysis(data_path, 'TR', folder)
-# rates_sp, times_sp = analysis.factor_analysis(data_path, 'SP', folder)
-# rates_tr_sp, times_tr_sp = analysis.factor_analysis(data_path, 'TR_SP', folder)
-# rates5_sp_tr, times_sp_tr = analysis.factor_analysis(data_path, 'SP_TR', folder)
-# rates6_sp_dp, times_sp_dp = analysis.factor_analysis(data_path, 'SP_DP', folder)
-# rates_dp_sp, times_dp_sp = analysis.factor_analysis(data_path, 'DP_SP', folder)
-# rates_tr_dp, times_tr_dp = analysis.factor_analysis(data_path, 'TR_DP', folder)
-# rates_dp_tr, times_dp_tr = analysis.factor_analysis(data_path, 'DP_TR', folder)
+rates_dp, times_dp = analysis.factor_analysis(data_path, 'DP', folder)
+rates_tr, times_tr = analysis.factor_analysis(data_path, 'TR', folder)
+rates_sp, times_sp = analysis.factor_analysis(data_path, 'SP', folder)
+rates_tr_sp, times_tr_sp = analysis.factor_analysis(data_path, 'TR_SP', folder)
+rates5_sp_tr, times_sp_tr = analysis.factor_analysis(data_path, 'SP_TR', folder)
+rates6_sp_dp, times_sp_dp = analysis.factor_analysis(data_path, 'SP_DP', folder)
+rates_dp_sp, times_dp_sp = analysis.factor_analysis(data_path, 'DP_SP', folder)
+rates_tr_dp, times_tr_dp = analysis.factor_analysis(data_path, 'TR_DP', folder)
+rates_dp_tr, times_dp_tr = analysis.factor_analysis(data_path, 'DP_TR', folder)
 
 # Distance matrices
-# measure_dp = analysis.factor_dist_analysis(data_path, 'DP', folder, metric=metric)
-# measure_rt = analysis.factor_dist_analysis(data_path, 'TR', folder, metric=metric)
-# measure_sp = analysis.factor_dist_analysis(data_path, 'SP', folder, metric=metric)
-# measure_tr_sp = analysis.factor_dist_analysis(data_path, 'TR_SP', folder, metric=metric)
-# measure_sp_tr = analysis.factor_dist_analysis(data_path, 'SP_TR', folder, metric=metric)
-# measure_dp_sp = analysis.factor_dist_analysis(data_path, 'DP_SP', folder, metric=metric)
-# measure_sp_dp = analysis.factor_dist_analysis(data_path, 'SP_DP', folder, metric=metric)
-# measure_tr_dp = analysis.factor_dist_analysis(data_path, 'TR_DP', folder, metric=metric)
-# measure_dp_tr = analysis.factor_dist_analysis(data_path, 'DP_TR', folder, metric=metric)
+measure_dp = analysis.factor_dist_analysis(data_path, 'DP', folder, metric=metric)
+measure_rt = analysis.factor_dist_analysis(data_path, 'TR', folder, metric=metric)
+measure_sp = analysis.factor_dist_analysis(data_path, 'SP', folder, metric=metric)
+measure_tr_sp = analysis.factor_dist_analysis(data_path, 'TR_SP', folder, metric=metric)
+measure_sp_tr = analysis.factor_dist_analysis(data_path, 'SP_TR', folder, metric=metric)
+measure_dp_sp = analysis.factor_dist_analysis(data_path, 'DP_SP', folder, metric=metric)
+measure_sp_dp = analysis.factor_dist_analysis(data_path, 'SP_DP', folder, metric=metric)
+measure_tr_dp = analysis.factor_dist_analysis(data_path, 'TR_DP', folder, metric=metric)
+measure_dp_tr = analysis.factor_dist_analysis(data_path, 'DP_TR', folder, metric=metric)
 
 
 # Clustering
@@ -56,5 +57,5 @@ measure_nmi_sp_dp = analysis.factor_cluster_analysis(data_path, 'SP_DP', folder,
 measure_nmi_tr_dp = analysis.factor_cluster_analysis(data_path, 'TR_DP', folder, metric=metric, mcs=mcs)
 measure_nmi_dp_tr = analysis.factor_cluster_analysis(data_path, 'DP_TR', folder, metric=metric, mcs=mcs)
 
-analysis.lines_compression(folder, metric=metric)
+pli.lines_compression(folder, metric=metric)
 
