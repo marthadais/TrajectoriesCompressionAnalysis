@@ -56,8 +56,9 @@ class Clustering:
 
         self._model = hdbscan.HDBSCAN(min_cluster_size=self.minClusterSize, min_samples=1, allow_single_cluster=True, metric='precomputed')
         self._model.fit(self.dm)
-        self._model.single_linkage_tree_.plot(cmap='viridis', colorbar=True)
+        axis = self._model.single_linkage_tree_.plot(cmap='viridis', colorbar=True)
         # plt.show()
+        plt.yticks(fontsize=11)
         plt.tight_layout()
         plt.savefig(f'{self.path}/dendogram-{self.minClusterSize}.png', bbox_inches='tight')
         plt.close()

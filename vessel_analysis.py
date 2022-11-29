@@ -6,12 +6,11 @@ data_path = './data/crop/DCAIS_[30, 1001, 1002]_region_[37.6, 39, -122.9, -122.2
 # tanker vessels
 # data_path = './data/crop/DCAIS_[80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 1017, 1024]_region_[47.5, 49.3, -125.5, -122.5]_01-04_to_30-06_trips.csv'
 
-# Measures: 'dtw', 'md'
-metric = 'dtw'
+# Measures: 'dtw', 'md', 'frechet'
+metric = 'frechet'
 
-# fishing + dtw = 2
-# fishing + md = 3 or 2
-# tanker + dtw = 3
+# fishing = 2
+# tanker = 3
 mcs = 2
 
 # path and folder for results

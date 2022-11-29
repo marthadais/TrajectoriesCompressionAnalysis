@@ -40,6 +40,28 @@ def purity_score(y_true, y_pred):
     return np.sum(np.amax(contingency_matrix, axis=0)) / np.sum(contingency_matrix)
 
 
+def time_mean(folder, item, options, col, lines_style, mark_size, line_size):
+    # comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR'}
+    comp_lbl = {'DP': 'DP', 'TR': 'TR', 'SP': 'SB', 'TR_SP': 'TR+SB', 'SP_TR': 'SB+TR', 'DP_SP': 'DP+SB',
+                'SP_DP': 'SB+DP', 'TR_DP': 'TR+DP', 'DP_TR': 'DP+TR'}
+    fig = plt.figure(figsize=(10, 8))
+    i=0
+    for compress_opt in options:
+        x = pd.read_csv(f'{folder}/{compress_opt}-compression_{item}.csv')
+        plt.plot(range(len(x.mean(axis=0))), x.mean(axis=0).iloc[x.shape[0]:None:-1], color=col[i], marker="p", linestyle=lines_style[i], linewidth=line_size[i],
+        markersize=mark_size[i], label=comp_lbl[compress_opt])
+        i = i+1
+    plt.ylabel(f'Average of Compression {item}',fontsize=25)
+    plt.xlabel('Factors',fontsize=25)
+    plt.legend(fontsize=18)
+    plt.xticks(range(len(x.mean(axis=0))), [r'$\frac{1}{128}$', r'$\frac{1}{64}$', r'$\frac{1}{32}$', r'$\frac{1}{16}$',
+                   r'$\frac{1}{8}$', r'$\frac{1}{4}$', r'$\frac{1}{2}$', r'$1$', r'$1.5$', r'$2$'], fontsize=25)
+    plt.yticks(fontsize=20)
+    plt.tight_layout()
+    plt.savefig(f'{folder}/lines-compression-{item}.png', bbox_inches='tight')
+    plt.close()
+
+
 def lines_ca_score(folder, score, options, comp_lbl, col, lines_style, mark_size, line_size):
     """
     It plots the lines for the clustering score.
@@ -73,38 +95,6 @@ def lines_ca_score(folder, score, options, comp_lbl, col, lines_style, mark_size
     plt.close()
 
 
-def time_mean(folder, item, options, comp_lbl, col, lines_style, mark_size, line_size):
-    """
-    It plots the lines for the processing time.
-
-    :param folder: folder that contains the results.
-    :param item: rates or processing time.
-    :param options: compression methods evaluated.
-    :param comp_lbl: labels of the compression techniques.
-    :param col: color vector.
-    :param lines_style: line style.
-    :param mark_size: size of the marks.
-    :param line_size: size of the lines.
-    """
-    fig = plt.figure(figsize=(10, 8))
-    i=0
-    for compress_opt in options:
-        x = pd.read_csv(f'{folder}/{compress_opt}-compression_{item}.csv')
-        plt.plot(range(len(x.mean(axis=0))), x.mean(axis=0).iloc[x.shape[0]:None:-1], color=col[i], marker="p",
-                 linestyle=lines_style[i], linewidth=line_size[i],
-                 markersize=mark_size[i], label=comp_lbl[compress_opt])
-        i = i+1
-    plt.ylabel(f'Average of Compression {item}',fontsize=25)
-    plt.xlabel('Factors',fontsize=25)
-    plt.legend(fontsize=18)
-    plt.xticks(range(len(x.mean(axis=0))), [r'$\frac{1}{128}$', r'$\frac{1}{64}$', r'$\frac{1}{32}$', r'$\frac{1}{16}$',
-                   r'$\frac{1}{8}$', r'$\frac{1}{4}$', r'$\frac{1}{2}$', r'$1$', r'$1.5$', r'$2$'], fontsize=25)
-    plt.yticks(fontsize=20)
-    plt.tight_layout()
-    plt.savefig(f'{folder}/lines-compression-{item}.png', bbox_inches='tight')
-    plt.close()
-
-
 def lines_compression(folder, metric='dtw'):
     """
     It plots the lines for the compression rates, scores, and processing time.
@@ -130,8 +120,7 @@ def lines_compression(folder, metric='dtw'):
     factors_str = [r'$\frac{1}{128}$', r'$\frac{1}{64}$', r'$\frac{1}{32}$', r'$\frac{1}{16}$',
                    r'$\frac{1}{8}$', r'$\frac{1}{4}$', r'$\frac{1}{2}$', r'$1$', r'$1.5$', r'$2$']
 
-    # plot the compression rates
-    time_mean(folder, 'rates', options, comp_lbl, col, lines_style, mark_size, line_size)
+    time_mean(folder, 'rates', options, col, lines_style, mark_size, line_size)
 
     # figure of the total processing time
     fig = plt.figure(figsize=(10, 8))
@@ -145,6 +134,8 @@ def lines_compression(folder, metric='dtw'):
         times[1:] = (times[1:].T + times_compression.sum()).T.iloc[10:None:-1]
         plt.plot(times, color=col[i], marker="p", linestyle=lines_style[i],
                  linewidth=line_size[i], markersize=mark_size[i], label=comp_lbl[compress_opt])
+        print(f'{compress_opt}:')
+        print(100-(times.iloc[1:,:]/times.iloc[0,:]*100).mean())
         i = i + 1
     plt.ylabel('Processing Time (s)', fontsize=25)
     plt.xlabel('Factors', fontsize=25)
@@ -175,8 +166,26 @@ def lines_compression(folder, metric='dtw'):
     plt.legend(fontsize=18)
     plt.xticks(range(len(measure)), factors_str, fontsize=25)
     plt.yticks(fontsize=20)
+    plt.ylim((0, 1))
     # plt.tight_layout()
     plt.savefig(f'{folder}/lines-measure-mantel.png', bbox_inches='tight')
+    plt.close()
+
+    fig = plt.figure(figsize=(10, 8))
+    i = 0
+    for compress_opt in options:
+        measure = pd.read_csv(f'{folder}/measures_{metric}_{compress_opt}_times.csv', index_col=0)
+        measure = measure.loc['mantel-pvalue']
+        plt.plot(measure.iloc[measure.shape[0]:None:-1], color=col[i], marker="p", linestyle=lines_style[i],
+                 linewidth=line_size[i], markersize=mark_size[i], label=comp_lbl[compress_opt])
+        i = i + 1
+    plt.ylabel('Mantel Test p-value', fontsize=25)
+    plt.xlabel('Factors', fontsize=25)
+    plt.legend(fontsize=18)
+    plt.xticks(range(len(measure)), factors_str, fontsize=25)
+    plt.yticks(fontsize=20)
+    plt.tight_layout()
+    plt.savefig(f'{folder}/lines-measure-mantel-pvalue.png', bbox_inches='tight')
     plt.close()
 
 
