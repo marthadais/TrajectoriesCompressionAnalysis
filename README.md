@@ -19,9 +19,17 @@ The proposed methodology assess how compression algorithms may influence the clu
    - Select the distance measure
      1. Define the metric as desired
      - 'dtw': dynamic time warping
+     - 'frechet': discrete fréchet distance
      - 'md': merge distance
      ```
      metric = 'dtw'
+     ```
+   - Select the minimum size of a cluster measure
+     1. Define minimum size of a cluster measure
+     - Fishing vessels: 2
+     - Tanker vessels: 3
+     ```
+     msc = 2
      ```
  
 2. source folder (src)
