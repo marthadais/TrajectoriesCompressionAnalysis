@@ -8,6 +8,7 @@ from itertools import product
 import time
 from numba import jit
 from src.frechet_dist import fast_frechet
+import hausdorff
 
 
 def dict_reorder(x):
@@ -101,7 +102,10 @@ def _dist_func(dataset, metric, mmsis, dim_set, id_b, id_a, s_a, dist_matrix, pr
     # compute distance
     if metric == 'dtw':
         dist_matrix[mmsis[id_a]][mmsis[id_b]] = fastdtw(np.array(s_a).T, np.array(s_b).T, dist=haversine)[0]
-    elif metric == 'frechet':
+    elif metric == 'hd':
+        dist_matrix[mmsis[id_a]][mmsis[id_b]] = hausdorff.hausdorff_distance(np.array(s_a).T, np.array(s_b).T,
+                                                                             'haversine')
+    elif metric == 'dfd':
         dist_matrix[mmsis[id_a]][mmsis[id_b]] = fast_frechet(np.array(s_a).T, np.array(s_b).T)
     else:
         dist_matrix[mmsis[id_a]][mmsis[id_b]] = MD(np.array(s_a).T, np.array(s_b).T)
