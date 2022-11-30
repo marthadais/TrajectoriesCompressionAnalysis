@@ -19,7 +19,8 @@ The proposed methodology assess how compression algorithms may influence the clu
    - Select the distance measure
      1. Define the metric as desired
      - 'dtw': dynamic time warping
-     - 'frechet': discrete fréchet distance
+     - 'hd': hausdorff distance
+     - 'dfd': discrete fréchet distance
      - 'md': merge distance
      ```
      metric = 'dtw'
