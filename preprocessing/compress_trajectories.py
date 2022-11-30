@@ -4,9 +4,12 @@ import numpy as np
 from src.compression import compression
 import pickle
 
+
 def dict_to_pandas(dataset):
     """
     It converts the dict dataset into pandas format.
+
+    :param dataset: dict dataset
     :return: dataset in a pandas format.
     """
     new_dataset = pd.DataFrame()
@@ -20,6 +23,8 @@ def dict_to_pandas(dataset):
 def pandas_to_dict(dataset):
     """
     It converts the pandas dataset into dict format.
+
+    :param dataset: pandas dataset
     :return: dataset in a pandas format.
     """
     new_dataset = {}
@@ -41,9 +46,9 @@ def pandas_to_dict(dataset):
 def get_raw_dataset(dataset_path):
     """
     It compress the trajectories and provide compress rate and processing time.
+
     :param dataset_path: path of dataset with trajectories
-    :param compress: compress algorithm: 'DP', 'TR', 'SP', 'DP_TR','DP_SP','TR_DP','TR_SP','SP_TR','SP_DP' (Default: 'DP')
-    :param alpha: compression threshold
+    :return: dict dataset
     """
     dataset = pd.read_csv(dataset_path, parse_dates=['time'], low_memory=False)
     dataset['time'] = dataset['time'].astype('datetime64[ns]')
@@ -58,9 +63,11 @@ def get_raw_dataset(dataset_path):
 def compress_trips(dataset_path, compress='DP', alpha=1, **args):
     """
     It compress the trajectories and provide compress rate and processing time.
+
     :param dataset_path: path of dataset with trajectories
     :param compress: compress algorithm: 'DP', 'TR', 'SP', 'DP_TR','DP_SP','TR_DP','TR_SP','SP_TR','SP_DP' (Default: 'DP')
     :param alpha: compression threshold
+    :return: compressed dataset, compression rate, and processing time.
     """
     dataset_dict = get_raw_dataset(dataset_path)
 

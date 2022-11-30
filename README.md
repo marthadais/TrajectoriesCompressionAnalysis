@@ -19,13 +19,25 @@ The proposed methodology assess how compression algorithms may influence the clu
    - Select the distance measure
      1. Define the metric as desired
      - 'dtw': dynamic time warping
+     - 'hd': hausdorff distance
+     - 'dfd': discrete fréchet distance
      - 'md': merge distance
      ```
      metric = 'dtw'
      ```
+   - Select the minimum size of a cluster measure
+     1. Define minimum size of a cluster measure
+     - Fishing vessels: 2
+     - Tanker vessels: 3
+     ```
+     msc = 2
+     ```
  
 2. source folder (src)
    - analysis.py: contains functions to analyze the different factors and plot images
+     1. compression analysis
+     2. distances analysis
+     3. clustering analysis
    - clustering.py: contains clustering class to compute the clustering 
    - compression.py: contains function to compute the compression
    - distance.py: contains functions to compute distance between trajectories
