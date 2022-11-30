@@ -1,6 +1,6 @@
 # TrajectoriesCompressionAnalysis
 
-The proposed methodology assess how compression algorithms may influence the clustering analysis with respect to anomaly detection of vessel trajectories. Results shows that a suitable compression algorithm for a particular scenario can reduce the overall processing time with a low impact on the clustering outcome.
+The proposed methodology assess how compression algorithms influence the clustering analysis with respect to anomaly detection of vessel trajectories. Results shows that a suitable compression algorithm for a particular scenario can reduce the overall processing time with a low impact on the clustering outcome.
 
 ## Files Description
 1. vessel_analysis.py
