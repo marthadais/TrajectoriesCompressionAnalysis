@@ -5,6 +5,7 @@ The proposed methodology assess how compression algorithms influence the cluster
 ## Files Description
 1. vessel_analysis.py
    - Code to execute the analysis on vessels
+   - Dataset can be found at https://figshare.com/s/3b736300bf47bffbcc07.
    - Select the vessel type:
      1. this line refers to fishing vessel
      ```
